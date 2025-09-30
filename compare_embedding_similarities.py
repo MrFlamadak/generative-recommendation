@@ -1,7 +1,10 @@
 from embedder import Embedder
 import numpy as np
 
-def clip_cos_similarity(embeddings):
+def cos_similarity(embeddings):
+    """
+    Assumes that the embeddings are normalised.
+    """
     return np.dot(embeddings, embeddings.T)
 
 if __name__ == '__main__':
@@ -12,7 +15,7 @@ if __name__ == '__main__':
         embeddings = embedder.encode(phrases)
         if embedder_name == 'clip':
             print("Cosine similarity between text embeddings using CLIP")
-            print(clip_cos_similarity(embeddings))
+            print(cos_similarity(embeddings))
             print()
         else:
             print("Cosine similarity between text embeddings using Sentence BERT.")
