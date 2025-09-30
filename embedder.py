@@ -2,7 +2,6 @@ import torch
 import clip
 import numpy as np
 from typing import List
-from PIL import Image
 
 class Embedder:
     def __init__(self, model_name="clip"):
