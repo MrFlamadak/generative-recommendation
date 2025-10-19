@@ -209,3 +209,6 @@ __marimo__/
 
 # BART transformer model
 bart-recommender/
+
+# .pickle files
+*.pkl
