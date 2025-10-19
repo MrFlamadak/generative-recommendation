@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from vector_quantize_pytorch import ResidualVQ
 
 class Encoder(nn.Module):
     def __init__(self, input_dim=384, latent_dim=32, hidden_dim=256):
@@ -30,18 +31,26 @@ class Decoder(nn.Module):
         return output
     
     
-class VAE(nn.Module):
-    def __init__(self, input_dim=384, latent_dim=32, hidden_dim=256):
+class RQVAE(nn.Module):
+    def __init__(self, input_dim=384, latent_dim=32, hidden_dim=256, codebook_size=512, num_quantizers=4):
         super().__init__()
         self.encoder = Encoder(input_dim, latent_dim, hidden_dim)
         self.decoder = Decoder(latent_dim, input_dim, hidden_dim)
-    
+        self.residual_vq = ResidualVQ(dim=latent_dim, num_quantizers=num_quantizers, codebook_size=codebook_size)
+
     def forward(self, x):
         z = self.encoder(x)
-        x_recon = self.decoder(z)
-        return x_recon
+        z_quantized, indices, commitment_loss = self.residual_vq(z)
+        x_recon = self.decoder(z_quantized)
+        return x_recon, indices, commitment_loss
     
-    def vae_loss(x, x_recon):
-        recon_loss = F.binary_cross_entropy(x_recon, x, reduction='sum')
-        # TODO: Commitment loss from Quantizer, then add together
-        return recon_loss
+    def encode_to_semantic_ids(self, x):
+        # Retrieve the semantic IDs given an input embedding
+        z = self.encoder(x)
+        _, indices, _ = self.residual_vq(z)
+        return indices
+    
+def rqvae_loss(x, x_recon, commitment_loss):
+    recon_loss = F.mse_loss(x_recon, x, reduction='mean')
+    total_loss = recon_loss + commitment_loss.mean()
+    return total_loss
