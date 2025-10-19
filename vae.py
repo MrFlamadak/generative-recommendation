@@ -23,7 +23,6 @@ class Decoder(nn.Module):
         self.fc2 = nn.Linear(hidden_dim, hidden_dim)
         self.hidden_to_output = nn.Linear(hidden_dim, output_dim)
         
-    
     def forward(self, z):
         h1 = F.relu(self.fc1(z))
         h2 = F.relu(self.fc2(h1))
@@ -36,23 +35,13 @@ class VAE(nn.Module):
         super().__init__()
         self.encoder = Encoder(input_dim, latent_dim, hidden_dim)
         self.decoder = Decoder(latent_dim, input_dim, hidden_dim)
-        
-        
-    def reparametrize(self, mu, std):
-        pass
-    
     
     def forward(self, x):
-        mu = self.encoder(x)
-        # skipping reparametrization for now
-        x_recon = self.decoder(mu)
-        
-        return x_recon, mu
+        z = self.encoder(x)
+        x_recon = self.decoder(z)
+        return x_recon
     
-    
-def vae_loss(x, x_recon, mu, logvar=0):
-    recon_loss = F.binary_cross_entropy(x_recon, x, reduction='sum')
-    
-    kl_loss = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
-    
-    return recon_loss + kl_loss
+    def vae_loss(x, x_recon):
+        recon_loss = F.binary_cross_entropy(x_recon, x, reduction='sum')
+        # TODO: Commitment loss from Quantizer, then add together
+        return recon_loss
