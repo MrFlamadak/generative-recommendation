@@ -18,16 +18,40 @@ customer_df.to_pickle("customers.pkl")
 transactions_df.to_pickle("transactions_train.pkl")
 
 '''
+#Remove duplicate words
 # Read Data
 customer_df = pd.read_pickle("customers.pkl")
 article_df = pd.read_pickle("articles.pkl")
 #transactions_df = pd.read_pickle("transactions_train.pkl")
 
+print("Example of article row")
+#print(article_df.iloc[3])
+# Removes all number columns except for article id.
+article_df_no_numbers = article_df[["article_id", "prod_name","product_type_name", "product_group_name",  "graphical_appearance_name",
+                                    "perceived_colour_value_name", "perceived_colour_master_name", "department_name",
+                                    "index_name", "index_group_name", "section_name", "garment_group_name", "detail_desc"]]
+
+article_df_no_numbers = article_df[["article_id", "graphical_appearance_name", "perceived_colour_value_name",
+                                    "perceived_colour_master_name","prod_name" ,"detail_desc",
+                                    "product_type_name", "product_group_name", "department_name",
+                                    "index_name", "index_group_name", "section_name", "garment_group_name"]]
+
+print(article_df_no_numbers.iloc[180])
+
+#print(article_df_no_numbers.iloc[123, 12])
 
 # Creates a dataframe with concatenated columns(1 string per row) (uses vectorized operation (very fast))
-article_df_strings = article_df.astype(str).agg(" ".join, axis=1)
+# article_id    feature_string
+#   ...             ...
+#   ...             ...
+article_df_strings = pd.DataFrame({
+    article_df_no_numbers.columns[0]: article_df_no_numbers.iloc[:, 0],
+    "feature_string": article_df_no_numbers.iloc[:, 1:].astype(str).agg(" ".join, axis=1)
+})
 
-# Split customers into 80/20, training and test
+print(article_df_strings.iloc[1])
+
+# Split customers into 80/20, training and test sets
 seed = 42
 customer_shuffled_df = customer_df.sample(frac=1, random_state=seed)
 
@@ -56,7 +80,6 @@ print(article_df.info()) # Seems to be a mix of int64 and objects(strings)
 print("Counts number of unique values for each column:\n")
 print(article_df.nunique()) # Contains many duplicated information columns, see ..._no and ..._name.
 
-# TAKES WAY TOO LONG TIME TO DO, WE SKIP FOR NOW
 # print("Calculates correlation between two columns in articles:\n")
 #one_hot_article_df_pdn = pd.get_dummies(article_df["prod_name"])
 #print(one_hot_article_df_pdn.corrwith(article_df["product_code"]))
