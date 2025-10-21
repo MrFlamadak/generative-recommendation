@@ -1,41 +1,29 @@
-import os
-from dotenv import load_dotenv
 import numpy as np
 import pandas as pd
 from scipy.sparse import csr_matrix
 from sklearn.metrics.pairwise import cosine_similarity
 
-load_dotenv('local.config')
-DATA_DIR = os.getenv('DATA_DIR')
 
 def compute_item_user_matrix():
-    transactions = pd.read_csv(f"{DATA_DIR}/transactions_train.csv",
-                               dtype={"customer_id": str, "article_id": str},
-                               parse_dates=["t_dat"])
+    transactions = pd.read_pickle("transactions_train.pkl")
+    transactions["customer_id"] = transactions["customer_id"].astype(str)
+    transactions["article_id"] = transactions["article_id"].astype(str)
     
-    """
-    # optional: pre-process the data, take a subset of data
-    user_counts = transactions["customer_id"].value_counts()
-    top_users = user_counts[user_counts >= 5].index # users with at least 5 purchases
-    filtered = transactions[transactions["customer_id"].isin(top_users)]
-    """
-    print(f"user_counts: {len(transactions["customer_id"].value_counts())}")
-    filtered = transactions
     # map user ids and item ids to integer indices
-    unique_users = filtered["customer_id"].unique()
-    unique_items = filtered["article_id"].unique()
+    unique_users = transactions["customer_id"].unique()
+    unique_items = transactions["article_id"].unique()
     user2idx = {u:i for i,u in enumerate(unique_users)}
     item2idx = {it:i for i,it in enumerate(unique_items)}
 
-    filtered["u_idx"] = filtered["customer_id"].map(user2idx)
-    filtered["i_idx"] = filtered["article_id"].map(item2idx)
+    transactions["u_idx"] = transactions["customer_id"].map(user2idx)
+    transactions["i_idx"] = transactions["article_id"].map(item2idx)
 
     # build user-item interaction matrix
     num_users = len(unique_users)
     num_items = len(unique_items)
-    rows = filtered["u_idx"].values
-    cols = filtered["i_idx"].values
-    data = np.ones(len(filtered), dtype=np.float32)
+    rows = transactions["u_idx"].values
+    cols = transactions["i_idx"].values
+    data = np.ones(len(transactions), dtype=np.float32)
 
     interaction_matrix = csr_matrix((data, (rows, cols)), shape=(num_users, num_items))
 
@@ -43,10 +31,10 @@ def compute_item_user_matrix():
     item_user_matrix = interaction_matrix.T
     item_similarity = cosine_similarity(item_user_matrix, dense_output=False)
 
-    return unique_users, unique_items, user2idx, interaction_matrix, item_similarity
+    return unique_items, user2idx, interaction_matrix, item_similarity
 
-def recommend_for_user(user_id,unique_items, user2idx, interaction_matrix, item_similarity, top_k=12):
-
+def recommend_for_user(user_id, unique_items, user2idx, interaction_matrix, item_similarity, top_k=12):
+   
     if user_id not in user2idx:
         return []
     
@@ -66,15 +54,17 @@ def recommend_for_user(user_id,unique_items, user2idx, interaction_matrix, item_
     top_k_indices = np.argpartition(-sim_scores, top_k)[:top_k]
 
     # map the top_k indices to corresponding items
-    recommednded_items = [unique_items[i] for i in top_k_indices]
+    recommednded_items = [int(unique_items[i]) for i in top_k_indices]
 
     return recommednded_items
 
 def main():
-    unique_users, unique_items, user2idx, interaction_matrix, item_similarity = compute_item_user_matrix()
-    sample_user = unique_users[0]
-    recommended_items = recommend_for_user(sample_user, unique_items, user2idx, interaction_matrix, item_similarity, top_k=12)
-    print(f"User: {sample_user}, recommended items: {recommended_items}")
+    unique_items, user2idx, interaction_matrix, item_similarity = compute_item_user_matrix()
+
+    sample_users_id = pd.read_pickle('customers.pkl')["customer_id"][:10]
+    for user_id in sample_users_id:
+        recommended_items = recommend_for_user(user_id, unique_items, user2idx, interaction_matrix, item_similarity, top_k=12)
+        print(f"User: {user_id}, recommended items: {recommended_items}")
 
 
 if __name__ == "__main__":
