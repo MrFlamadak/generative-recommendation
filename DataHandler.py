@@ -45,8 +45,7 @@ print(article_df_no_numbers.iloc[180])
 #   ...             ...
 #   ...             ...
 article_df_strings = pd.DataFrame({
-    article_df_no_numbers.columns[0]: article_df_no_numbers.iloc[:, 0],
-    "feature_string": article_df_no_numbers.iloc[:, 1:].astype(str).agg(" ".join, axis=1)
+    "feature_string": article_df_no_numbers.astype(str).agg(" ".join, axis=1)
 })
 
 print(article_df_strings.iloc[1])
