@@ -212,3 +212,6 @@ bart-recommender/
 
 # .pickle files
 *.pkl
+
+# .npy files
+*.npy
