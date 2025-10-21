@@ -8,17 +8,6 @@ import scipy as sc
 import matplotlib.pyplot as plt
 from pandas import DataFrame
 
-# Code that read from original csv and converted to very fast format pkl
-'''
-customer_df = pd.read_csv("customers.csv")
-transactions_df = pd.read_csv("transactions_train.csv")
-article_df = pd.read_csv("articles.csv")
-
-article_df.to_pickle("articles.pkl")
-customer_df.to_pickle("customers.pkl")
-transactions_df.to_pickle("transactions_train.pkl")
-
-'''
 def get_article_feature_string_list():
     article_df = pd.read_pickle("articles.pkl")
 
@@ -32,91 +21,53 @@ def get_article_feature_string_list():
     })
 
     return article_df_strings.values.tolist()
+def create_and_pickle_user_profiles():
 
-def get_user_profile_list():
-    return pd.read_pickle("user_profiles.pkl")
+    #Creates a user profile for each customer containing article ids of all articles that have been bought.
+    transactions_df = pd.read_pickle("transactions_train.pkl")
+    user_profiles_df = transactions_df.groupby("customer_id", as_index=False)["article_id"].agg(list)
+
+    user_profiles_df.to_pickle("user_profiles.pkl")
+    return user_profiles_df
+
 
 def create_test_and_training_user_profiles(frac):
-    customer_df = pd.read_pickle("customers.pkl")
+    user_profiles_df = pd.read_pickle("user_profiles.pkl")
     seed = 42
-    customer_shuffled_df = customer_df.sample(frac=1, random_state=seed)
+    user_profiles_shuffled_df = user_profiles_df.sample(frac=1, random_state=seed)
 
-    partition_index = int(frac * len(customer_df))
-    train_customer_df = customer_shuffled_df[0:partition_index]
-    test_customer_df = customer_shuffled_df[partition_index:]
+    partition_index = int(frac * len(user_profiles_df))
+    train_user_profiles_df = user_profiles_shuffled_df[0:partition_index]
+    test_user_profiles_df = user_profiles_shuffled_df[partition_index:]
 
-    print(f"Percentage of data in train: {len(train_customer_df) / len(customer_df)}")
-    print(f"Percentage of data in test: {len(test_customer_df) / len(customer_df)}")
-    return train_customer_df, test_customer_df
+    print(f"Percentage of data in train: {len(train_user_profiles_df) / len(user_profiles_df)}")
+    print(f"Percentage of data in test: {len(test_user_profiles_df) / len(user_profiles_df)}")
+    return train_user_profiles_df, test_user_profiles_df
 
+def info_about_article_dataset():
+    article_df = pd.read_pickle("articles.pkl")
 
+    # Data analysis (to understand the data)
+    print(f"Dimensions, column names and datatypes of the data:\n")
+    print(article_df.info()) # Seems to be a mix of int64 and objects(strings)
 
-#What are good functions to include? get customer data, get article dataa etc
-#Remove duplicate words
+    print("Counts number of unique values for each column:\n")
+    print(article_df.nunique()) # Contains many duplicated information columns, see ..._no and ..._name.
 
-# Read Data
-customer_df = pd.read_pickle("customers.pkl")
+    # print("Calculates correlation between two columns in articles:\n")
+    #one_hot_article_df_pdn = pd.get_dummies(article_df["prod_name"])
+    #print(one_hot_article_df_pdn.corrwith(article_df["product_code"]))
 
-article_feature_strings = get_article_feature_string_list()
-
-article_df = pd.read_pickle("articles.pkl")
-#transactions_df = pd.read_pickle("transactions_train.pkl")
-
-print("Example of article row")
-#print(article_df.iloc[3])
-
-
-#print(article_df_no_numbers.iloc[123, 12])
-
-# Creates a dataframe with concatenated columns(1 string per row) (uses vectorized operation (very fast))
-# article_id    feature_string
-#   ...             ...
-#   ...             ...
-
-print(article_feature_strings.iloc[1])
-
-# Split customers into 80/20, training and test sets
-seed = 42
-customer_shuffled_df = customer_df.sample(frac=1, random_state=seed)
-
-partition_index = int(0.8*len(customer_df))
-train_customer_df = customer_shuffled_df[0:partition_index]
-test_customer_df = customer_shuffled_df[partition_index:]
-
-print(f"Percentage of data in train: {len(train_customer_df) / len(customer_df)}")
-print(f"Percentage of data in test: {len(test_customer_df) / len(customer_df)}")
-
-
-# Create user items list each customer should have a list of article ids which he has bought.
-
-#customer_item_list_df = transactions_df.groupby("customer_id", as_index=False)["article_id"].agg(list)
-# Create pickle file because very slow
-
-#customer_item_list_df.to_pickle("user_profiles.pkl")
-user_profiles_df = pd.read_pickle("user_profiles.pkl")
-
-print(user_profiles_df.iloc[0])
-
-# Data analysis (to understand the data)
-print(f"Shows dimensions, column names and datatypes of the data:\n")
-print(article_df.info()) # Seems to be a mix of int64 and objects(strings)
-
-print("Counts number of unique values for each column:\n")
-print(article_df.nunique()) # Contains many duplicated information columns, see ..._no and ..._name.
-
-# print("Calculates correlation between two columns in articles:\n")
-#one_hot_article_df_pdn = pd.get_dummies(article_df["prod_name"])
-#print(one_hot_article_df_pdn.corrwith(article_df["product_code"]))
-
-# Creates a barchart showing distribution of articles with each respective section name
-counts = article_df["section_name"].value_counts()
-print(counts)
-counts.plot(figsize=(12,7), kind="bar")
-plt.xticks(rotation=90)
-plt.subplots_adjust(bottom=0.4)
-plt.xlabel("Section")
-plt.ylabel("Count")
-plt.title("Count of articles belonging to each respective section")
-plt.show()
-# 1/3 of all articles are concentrated in two sections and 18 sections have less than 1000 articles each
-# with bottom 4 having less than 50
+    # Creates a barchart showing distribution of articles with each respective section name
+    counts = article_df["section_name"].value_counts()
+    print(counts)
+    counts.plot(figsize=(12,7), kind="bar")
+    plt.xticks(rotation=90)
+    plt.subplots_adjust(bottom=0.4)
+    plt.xlabel("Section")
+    plt.ylabel("Count")
+    plt.title("Count of articles belonging to each respective section")
+    plt.show()
+    # 1/3 of all articles are concentrated in two sections and 18 sections have less than 1000 articles each
+    # with bottom 4 having less than 50
+    return
