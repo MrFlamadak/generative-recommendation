@@ -207,4 +207,11 @@ marimo/_static/
 marimo/_lsp/
 __marimo__/
 
+# .pickle files
+*.pkl
+
+# BART transformer model
+bart-recommender/
+
+# local.config
 local.config
