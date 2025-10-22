@@ -76,10 +76,10 @@ def prepare_dataset(user_histories, window_size, tokenizer):
 def train_model(dataset, model):
     training_args = TrainingArguments(
         output_dir = './bart-recommender',
-        num_train_epochs=10,
-        per_device_train_batch_size=2,
-        logging_steps=5,
-        save_steps=10,
+        num_train_epochs=5,
+        per_device_train_batch_size=16,
+        logging_steps=100,
+        save_steps=1000,
         save_total_limit=2,
         remove_unused_columns=False,
         report_to=[],
@@ -93,7 +93,7 @@ def train_model(dataset, model):
     trainer.train()
 
 # inference (make prediction)
-def recommended_next_sid(history, model, tokenizer, window_size=3, num_beams=5):
+def recommended_next_sid(history, model, tokenizer, window_size=3, top_k=5):
     input_seq = ', '.join(history[-window_size:])
     inputs = tokenizer(input_seq, return_tensors="pt", truncation=True, max_length=16)
     device = next(model.parameters()).device  # Get model device
@@ -102,10 +102,10 @@ def recommended_next_sid(history, model, tokenizer, window_size=3, num_beams=5):
         inputs['input_ids'],
         attention_mask=inputs['attention_mask'],
         max_length=4,
-        num_beams=num_beams,
+        num_beams=max(top_k, 5),
+        num_return_sequences=top_k,
         early_stopping=True
     )
-    #recommendation = tokenizer.decode(output_ids[0], skip_special_tokens=True) # return just the most probable token
     recommendations = [tokenizer.decode(ids, skip_special_tokens=True) for ids in output_ids] # return all tokens
     return recommendations
 
@@ -139,7 +139,7 @@ def main():
         tokenizer.save_pretrained('./bart-recommender/final_model')
 
     # recommendation example
-    test_history = ['5 10 15', '20 25 30', '35 40 45']
+    test_history = ['110 450 228 503', '28 450 349 425', '28 450 349 425']
     recommended_sid = recommended_next_sid(test_history, model, tokenizer, window_size)
     print('Recommended SID:', recommended_sid)
 
