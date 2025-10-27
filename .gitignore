@@ -215,3 +215,6 @@ bart-recommender/
 
 # .npy files
 *.npy
+
+# .joblib files
+*.joblib
