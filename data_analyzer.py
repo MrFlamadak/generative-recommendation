@@ -75,9 +75,9 @@ def print_data_stats(data):
 
 def plot_som(vector_data, article_data):
     # Train MiniSom
-    som = MiniSom(10, 10, vector_data.shape[1], sigma=0.5, learning_rate=0.4)
+    som = MiniSom(10, 10, vector_data.shape[1], sigma=0.5, learning_rate=0.5)
 
-    som.train(vector_data, 3000)
+    som.train(vector_data, 1000)
 
     # Map each data point to its SOM position
     mapped = np.array([som.winner(x) for x in vector_data])
@@ -149,6 +149,21 @@ def print_article_dataset_infostats():
     # with bottom 4 having less than 50
     return
 
+def print_transaction_list_dataset_infostats():
+    user_profile_train_df = pd.read_pickle("customer_transactions_TRAIN60P.pkl")
+    # training, test = dh.create_test_and_training_user_profiles(0.8)
+
+    # Compute lengths of article_id arraystr
+
+    user_profile_train_df['num_articles'] = user_profile_train_df['article_id'].apply(len)
+
+    # Count how many customers have each article count
+    counts = user_profile_train_df['num_articles'].value_counts().sort_index()
+
+    print(counts.head())
+    print(len(user_profile_train_df))
+    return
+
 
 
 if __name__ == '__main__':
@@ -159,5 +174,6 @@ if __name__ == '__main__':
     print("\nSEMANTIC ID DATA STATS")
     print_data_stats(sem_data)
     plot_som(sem_data, article_data)
+    print_transaction_list_dataset_infostats()
 
 
