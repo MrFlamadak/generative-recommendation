@@ -1,4 +1,5 @@
 import encodings
+import random
 import string
 from os import write
 
@@ -31,43 +32,69 @@ def create_and_pickle_user_profiles():
     return user_profiles_df
 
 
-def create_test_and_training_user_profiles(frac):
+def create_train_val_test_user_profiles():
     user_profiles_df = pd.read_pickle("user_profiles.pkl")
+    user_profiles_df = user_profile_preprocessing(user_profiles_df, 2)
     seed = 42
     user_profiles_shuffled_df = user_profiles_df.sample(frac=1, random_state=seed)
 
-    partition_index = int(frac * len(user_profiles_df))
-    train_user_profiles_df = user_profiles_shuffled_df[0:partition_index]
-    test_user_profiles_df = user_profiles_shuffled_df[partition_index:]
+    partition_index_1 = int(0.6 * len(user_profiles_df))
+    partition_index_2 = int(0.8 * len(user_profiles_df))
+    train_user_profiles_df = user_profiles_shuffled_df[0:partition_index_1]
+    val_user_profiles_df = user_profiles_shuffled_df[partition_index_1:partition_index_2]
+    test_user_profiles_df = user_profiles_shuffled_df[partition_index_2:]
 
     print(f"Percentage of data in train: {len(train_user_profiles_df) / len(user_profiles_df)}")
+    print(f"Percentage of data in validation: {len(val_user_profiles_df) / len(user_profiles_df)}")
     print(f"Percentage of data in test: {len(test_user_profiles_df) / len(user_profiles_df)}")
-    return train_user_profiles_df, test_user_profiles_df
 
-def info_about_article_dataset():
-    article_df = pd.read_pickle("articles.pkl")
+    train_user_profiles_df.to_pickle("customer_transactions_TRAIN60P.pkl")
+    val_user_profiles_df.to_pickle("customer_transactions_VAL20P.pkl")
+    test_user_profiles_df.to_pickle("customer_transactions_TEST20P.pkl")
 
-    # Data analysis (to understand the data)
-    print(f"Dimensions, column names and datatypes of the data:\n")
-    print(article_df.info()) # Seems to be a mix of int64 and objects(strings)
+    return train_user_profiles_df, val_user_profiles_df, test_user_profiles_df
 
-    print("Counts number of unique values for each column:\n")
-    print(article_df.nunique()) # Contains many duplicated information columns, see ..._no and ..._name.
+def get_random_item_to_sem_ids(size):
+    article_data = pd.read_pickle("articles.pkl")
+    item_to_sem = pd.read_pickle("item_2_semantic.pkl")
 
-    # print("Calculates correlation between two columns in articles:\n")
-    #one_hot_article_df_pdn = pd.get_dummies(article_df["prod_name"])
-    #print(one_hot_article_df_pdn.corrwith(article_df["product_code"]))
+    random_item_to_sem_ids = random.sample(list(item_to_sem.items()), size)
+    chosen_sem_ids = [sem_id for _, sem_id in random_item_to_sem_ids]
+    chosen_sem_ids = np.array(chosen_sem_ids)
 
-    # Creates a barchart showing distribution of articles with each respective section name
-    counts = article_df["section_name"].value_counts()
-    print(counts)
-    counts.plot(figsize=(12,7), kind="bar")
-    plt.xticks(rotation=90)
-    plt.subplots_adjust(bottom=0.4)
-    plt.xlabel("Section")
-    plt.ylabel("Count")
-    plt.title("Count of articles belonging to each respective section")
-    plt.show()
-    # 1/3 of all articles are concentrated in two sections and 18 sections have less than 1000 articles each
-    # with bottom 4 having less than 50
-    return
+    chosen_article_ids = [int(article_id) for article_id, _ in random_item_to_sem_ids]
+    chosen_article_data = article_data[article_data["article_id"].isin(chosen_article_ids)]
+    # Reorders so that indices match
+    chosen_article_data = article_data.set_index("article_id").loc[chosen_article_ids].reset_index()
+
+    return chosen_sem_ids, chosen_article_data
+
+def user_profile_preprocessing(user_profile, threshold):
+    """
+    Removes all rows from user_profile where the number of articles
+    is less than the given threshold.
+
+    Parameters
+    ----------
+    user_profile : pd.DataFrame
+        DataFrame with columns ['customer_id', 'article_id'], where 'article_id' is a list.
+    threshold : int
+        Minimum number of articles a customer must have to be kept.
+
+    Returns
+    -------
+    pd.DataFrame
+        Filtered DataFrame containing only customers with article counts >= threshold.
+    """
+    # Compute number of articles per customer
+    user_profile['num_articles'] = user_profile['article_id'].apply(len)
+
+    # Filter rows based on threshold
+    preprocessed_user_profile = user_profile[user_profile['num_articles'] >= threshold].copy()
+
+    # Optionally drop helper column if not needed
+    preprocessed_user_profile.drop(columns='num_articles', inplace=True)
+
+    return preprocessed_user_profile
+
+
