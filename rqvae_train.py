@@ -39,7 +39,7 @@ def train_rqvae_sanity_check(rqvae, embeddings, n_samples=100, epochs=5, batch_s
     rqvae.eval()
     return rqvae
 
-def train_rqvae_full(rqvae, embeddings, epochs=100, batch_size=128, lr=1e-3, save_path=None, checkpoint_freq=10, verbose=True):
+def train_rqvae_full(rqvae, embeddings, epochs=100, batch_size=256, lr=1e-3, save_path=None, checkpoint_freq=10, verbose=True, early_stopping_patience=15, min_delta=1e-4):
     dataset = TensorDataset(embeddings)
     dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
     optimizer = optim.Adam(rqvae.parameters(), lr=lr)
@@ -47,6 +47,7 @@ def train_rqvae_full(rqvae, embeddings, epochs=100, batch_size=128, lr=1e-3, sav
     rqvae.train()
     losses = []
     best_loss = float('inf')
+    patience_counter = 0
     
     for epoch in range(epochs):
         epoch_losses = []
@@ -60,9 +61,20 @@ def train_rqvae_full(rqvae, embeddings, epochs=100, batch_size=128, lr=1e-3, sav
         avg_loss = np.mean(epoch_losses)
         losses.append(avg_loss)
 
+        # Early stopping
+        if avg_loss < best_loss - min_delta:
+            best_loss = avg_loss
+            patience_counter = 0
+            if save_path:
+                best_path = f'{save_path}_best.pth'
+                torch.save(rqvae.state_dict(), best_path)
+        else:
+            patience_counter += 1
+
         if verbose and (epoch+1) % 10 == 0:
             print(f'Epoch {epoch+1}/{epochs}, loss = {avg_loss:.4f}')
 
+        # checkpoint
         if save_path and (epoch+1) % checkpoint_freq == 0:
             checkpoint_path = f'{save_path}_epoch_{epoch+1}.pth'
             torch.save({
@@ -72,14 +84,13 @@ def train_rqvae_full(rqvae, embeddings, epochs=100, batch_size=128, lr=1e-3, sav
                 'loss': avg_loss,
             }, checkpoint_path)
         
-        if verbose:
-            print(f'saved checkpoint at epoch {epoch+1}')
+            if verbose:
+                print(f'saved checkpoint at epoch {epoch+1}')
 
-        if avg_loss < best_loss:
-            best_loss = avg_loss
-            if save_path:
-                best_path = f'{save_path}_best.pth'
-                torch.save(rqvae.state_dict(), best_path)
+        # check early stopping criteria
+        if patience_counter >= early_stopping_patience:
+            print(f"Early stopping triggered at epoch {epoch+1}")
+            break
 
     # save not only best model so far, but also the final model
     if save_path:
