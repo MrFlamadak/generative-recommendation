@@ -4,7 +4,7 @@ import torch
 from transformers import BartTokenizer, BartForConditionalGeneration, Trainer, TrainingArguments, EarlyStoppingCallback
 from torch.utils.data import Dataset,random_split
 
-# setting device to cuda for Google Colab
+# setting device to cuda to utilize GPU
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 class RecommendationDataset(Dataset):
@@ -73,7 +73,7 @@ def prepare_dataset(user_histories, window_size, tokenizer):
     return RecommendationDataset(all_sequences, tokenizer)
 
 # train the model
-def train_model(train_dataset, model, eval_dataset=None, compute_metrics=None, eval_steps=500, patience=3):
+def train_model(train_dataset, model, eval_dataset=None, compute_metrics=None, eval_steps=100, patience=5):
     training_args = TrainingArguments(
         output_dir = './bart-recommender',
         num_train_epochs=5,
@@ -83,7 +83,7 @@ def train_model(train_dataset, model, eval_dataset=None, compute_metrics=None, e
         save_total_limit=2,
         remove_unused_columns=False,
         report_to=[],
-        fp16=False,
+        fp16=True if torch.cuda.is_available() else False, # to speed-up training when running on GPU
         eval_strategy = 'steps' if eval_dataset is not None else 'no',
         eval_steps= eval_steps if eval_dataset is not None else None,
         load_best_model_at_end = True if eval_dataset is not None else False,
