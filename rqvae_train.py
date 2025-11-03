@@ -101,6 +101,6 @@ def train_rqvae_full(rqvae, embeddings, epochs=100, batch_size=256, lr=1e-3, sav
     return rqvae
 
 def load_trained_rqvae(rqvae, model_path):
-    rqvae.load_state_dict(torch.load(model_path))
+    rqvae.load_state_dict(torch.load(model_path, map_location=torch.device('cpu')))
     rqvae.eval()
     return rqvae
