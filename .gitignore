@@ -218,3 +218,9 @@ bart-recommender/
 
 # .joblib files
 *.joblib
+
+# quantizers folder
+quantizers/
+
+# DS_Store files
+.DS_Store
