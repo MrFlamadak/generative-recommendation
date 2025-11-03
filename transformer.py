@@ -1,10 +1,10 @@
 import os
 import numpy as np
 import torch
-from transformers import BartTokenizer, BartForConditionalGeneration, Trainer, TrainingArguments
-from torch.utils.data import Dataset
+from transformers import BartTokenizer, BartForConditionalGeneration, Trainer, TrainingArguments, EarlyStoppingCallback
+from torch.utils.data import Dataset,random_split
 
-# setting device to cuda for Google Colab
+# setting device to cuda to utilize GPU
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 class RecommendationDataset(Dataset):
@@ -73,7 +73,7 @@ def prepare_dataset(user_histories, window_size, tokenizer):
     return RecommendationDataset(all_sequences, tokenizer)
 
 # train the model
-def train_model(dataset, model):
+def train_model(train_dataset, model, eval_dataset=None, compute_metrics=None, eval_steps=100, patience=5):
     training_args = TrainingArguments(
         output_dir = './bart-recommender',
         num_train_epochs=5,
@@ -83,12 +83,24 @@ def train_model(dataset, model):
         save_total_limit=2,
         remove_unused_columns=False,
         report_to=[],
-        fp16=False
+        fp16=True if torch.cuda.is_available() else False, # to speed-up training when running on GPU
+        eval_strategy = 'steps' if eval_dataset is not None else 'no',
+        eval_steps= eval_steps if eval_dataset is not None else None,
+        load_best_model_at_end = True if eval_dataset is not None else False,
+        metric_for_best_model = 'eval_loss',
+        greater_is_better = False
     )
+    callbacks = []
+    if eval_dataset is not None:
+        callbacks = [EarlyStoppingCallback(early_stopping_patience=patience)]
+
     trainer = Trainer(
         model=model,
         args=training_args,
-        train_dataset=dataset
+        train_dataset=train_dataset,
+        eval_dataset=eval_dataset,
+        compute_metrics=compute_metrics,
+        callbacks=callbacks
     )
     trainer.train()
 
@@ -133,13 +145,22 @@ def main():
         model.resize_token_embeddings(len(tokenizer))
 
         dataset = prepare_dataset(user_histories, window_size, tokenizer)
-        train_model(dataset, model)
+
+        # split dataset into train, val (80, 20)
+        train_size = int(0.8 * len(dataset))
+        val_size = len(dataset) - train_size
+        train_dataset, val_dataset = random_split(
+            dataset, [train_size, val_size],
+            generator=torch.Generator().manual_seed(42)
+        )
+
+        train_model(train_dataset, model, val_dataset)
 
         model.save_pretrained('./bart-recommender/final_model')
         tokenizer.save_pretrained('./bart-recommender/final_model')
 
     # recommendation example
-    test_history = ['110 450 228 503', '28 450 349 425', '28 450 349 425']
+    test_history = ['110 450 228 503', '28 450 349 425']
     recommended_sid = recommended_next_sid(test_history, model, tokenizer, window_size)
     print('Recommended SID:', recommended_sid)
 
