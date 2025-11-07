@@ -97,4 +97,60 @@ def user_profile_preprocessing(user_profile, threshold):
 
     return preprocessed_user_profile
 
+def split_input_label_transactions(transactions, input_size=3, labels=1):
+    """
+    Splits the transaction lists into inputs and labels. Intended for
+    the test data.
+    
+    Parameters
+    ----------
+    transactions : dict[string -> list[int]]
+        Dictionary with key-value pairs ('customer_id', semantic_id_list)
+    input_size : int
+        Defines the amount of inputs needed from each user's transaction list.
+    labels : int
+        Defines the amount of labels needed from each user's transaction list.
+        
+    Returns
+    -------
+    split_transactions : dict[string -> (list[int], list[int])]
+        Dictionary with key-value pairs ('customer_id', (input_semantic_id_list, label_semantic_id_list))
+    """
+    
+    split_transactions = {}
+    
+    for key, list in transactions.items():
+        split_transactions[key] = (list[:input_size], list[-labels:])
+    
+    return split_transactions
 
+def user_profile_extract_equal_to_threshold(user_profile, threshold):
+    """
+    Extracts all rows from user_profile where the number of articles
+    is equal to the given threshold.
+
+    Parameters
+    ----------
+    user_profile : pd.DataFrame
+        DataFrame with columns ['customer_id', 'article_id'], where 'article_id' is a list.
+    threshold : int
+        number of articles a customer must have to be kept.
+
+    Returns
+    -------
+    pd.DataFrame
+        Filtered DataFrame containing only customers with article counts == threshold.
+    """
+    # Compute number of articles per customer
+    user_profile['num_articles'] = user_profile['article_id'].apply(len)
+
+    # Filter rows based on threshold
+    preprocessed_user_profile = user_profile[user_profile['num_articles'] == threshold].copy()
+
+    # Optionally drop helper column if not needed
+    preprocessed_user_profile.drop(columns='num_articles', inplace=True)
+
+    return preprocessed_user_profile
+
+transaction = pd.read_pickle('customer_transactions_TEST20P.pkl')
+split_input_label_transactions(transaction, 0)
