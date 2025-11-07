@@ -73,26 +73,40 @@ def prepare_dataset(user_histories, window_size, tokenizer):
     return RecommendationDataset(all_sequences, tokenizer)
 
 # train the model
-def train_model(train_dataset, model, eval_dataset=None, compute_metrics=None, eval_steps=100, patience=5):
+def train_model(train_dataset, model, eval_dataset=None, compute_metrics=None, eval_steps=5000, patience=5, grad_accum_steps=1, num_workers=4):
     training_args = TrainingArguments(
         output_dir = './bart-recommender',
         num_train_epochs=5,
         per_device_train_batch_size=16,
-        logging_steps=100,
-        save_steps=1000,
+        gradient_accumulation_steps=grad_accum_steps,
+        dataloader_num_workers=num_workers,
+        dataloader_pin_memory=True,
+        logging_steps=500,
+        save_steps=5000,
         save_total_limit=2,
         remove_unused_columns=False,
         report_to=[],
-        fp16=True if torch.cuda.is_available() else False, # to speed-up training when running on GPU
+        fp16=True if torch.cuda.is_available() else False, # mixed precision on CUDA
+        optim='adamw_torch',
         eval_strategy = 'steps' if eval_dataset is not None else 'no',
         eval_steps= eval_steps if eval_dataset is not None else None,
         load_best_model_at_end = True if eval_dataset is not None else False,
         metric_for_best_model = 'eval_loss',
         greater_is_better = False
     )
+        
     callbacks = []
     if eval_dataset is not None:
         callbacks = [EarlyStoppingCallback(early_stopping_patience=patience)]
+
+    # enable model optimizations before Trainer takes over
+    if torch.cuda.is_available():
+        model.to(device)
+    # enable gradient checkpointing to reduce memory (costs compute)
+    try:
+        model.gradient_checkpointing_enable()
+    except Exception:
+        pass
 
     trainer = Trainer(
         model=model,
