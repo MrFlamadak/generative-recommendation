@@ -73,7 +73,7 @@ def prepare_dataset(user_histories, window_size, tokenizer):
     return RecommendationDataset(all_sequences, tokenizer)
 
 # train the model
-def train_model(train_dataset, model, eval_dataset=None, compute_metrics=None, eval_steps=5000, patience=5, grad_accum_steps=1, num_workers=4):
+def train_model(train_dataset, model, eval_dataset=None, eval_steps=5000, patience=5, grad_accum_steps=1, num_workers=4):
     training_args = TrainingArguments(
         output_dir = './bart-recommender',
         num_train_epochs=5,
@@ -94,26 +94,24 @@ def train_model(train_dataset, model, eval_dataset=None, compute_metrics=None, e
         metric_for_best_model = 'eval_loss',
         greater_is_better = False
     )
-        
+    # print(f"LR: {training_args.learning_rate}") # by default the lr=5e-5 
     callbacks = []
     if eval_dataset is not None:
         callbacks = [EarlyStoppingCallback(early_stopping_patience=patience)]
 
-    # enable model optimizations before Trainer takes over
-    if torch.cuda.is_available():
-        model.to(device)
-    # enable gradient checkpointing to reduce memory (costs compute)
+    # enable gradient checkpointing to reduce memory in cost of computation, this because of avoiding OOM error
     try:
         model.gradient_checkpointing_enable()
-    except Exception:
-        pass
+    except AttributeError:
+        print("Model does not support gradient_checkpointing_enable()")
+    except Exception as e:
+        print(f"Failed to enable gradient_checkpointing: {e}")
 
     trainer = Trainer(
         model=model,
         args=training_args,
         train_dataset=train_dataset,
         eval_dataset=eval_dataset,
-        compute_metrics=compute_metrics,
         callbacks=callbacks
     )
     trainer.train()
