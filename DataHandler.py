@@ -26,6 +26,7 @@ def create_and_pickle_user_profiles():
 
     #Creates a user profile for each customer containing article ids of all articles that have been bought.
     transactions_df = pd.read_pickle("transactions_train.pkl")
+    transactions_df = pd.read_pickle("transactions_train.pkl")
     user_profiles_df = transactions_df.groupby("customer_id", as_index=False)["article_id"].agg(list)
 
     user_profiles_df.to_pickle("user_profiles.pkl")
@@ -151,6 +152,3 @@ def user_profile_extract_equal_to_threshold(user_profile, threshold):
     preprocessed_user_profile.drop(columns='num_articles', inplace=True)
 
     return preprocessed_user_profile
-
-transaction = pd.read_pickle('customer_transactions_TEST20P.pkl')
-split_input_label_transactions(transaction, 0)
