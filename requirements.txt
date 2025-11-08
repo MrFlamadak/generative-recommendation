@@ -1,0 +1,41 @@
+# Core Python packages
+numpy==2.2.3
+pandas==2.3.1
+scipy==1.16.1
+scikit-learn==1.7.1
+
+# Deep learning
+torch==2.8.0
+torchvision==0.23.0
+torchaudio==2.8.0
+
+# Transformers / HuggingFace
+transformers==4.57.1
+tokenizers==0.22.1
+sentence-transformers==5.1.1
+huggingface-hub==0.36.0
+
+# Utilities
+tqdm==4.67.1
+joblib==1.5.2
+requests==2.32.5
+python-dotenv==1.1.1
+
+# Vector quantization (RQ-VAE)
+vector-quantize-pytorch==1.24.1
+
+# Contrastive Language-Image Pretraining (CLIP)
+clip @ git+https://github.com/openai/CLIP.git@dcba3cb2e2827b402d2701e7e1c7d9fed8a20ef1
+
+# Optional for plots/debugging
+matplotlib==3.10.5
+seaborn==0.13.2
+
+# Jupyter Notebook
+notebook
+ipykernel
+ipywidgets
+
+# Run the command below to create a new kernel of your environment
+# Comment: Move this to README.md
+# python -m ipykernel install --user --name=genrec --display-name "Python (genrec)"
