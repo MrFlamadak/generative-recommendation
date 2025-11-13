@@ -193,6 +193,16 @@ def filter_transaction_list(min, quantile, transaction_list):
     print(f"Users with less than {min} and more than {cut_off} transactions have been removed from the transaction_list dataset.")
     return transaction_list
 
+def split_train_val_test_last_2(transaction_list_df):
+    test = transaction_list_df.copy()
+    val = transaction_list_df.copy()
+    train = transaction_list_df.copy()
+
+    val["article_id"] = val["article_id"].apply(lambda x: x[:-1])
+    train["article_id"] = train["article_id"].apply(lambda x: x[:-2])
+
+    return train, val, test
+
 if __name__ == '__main__':
     transaction_list = pd.read_pickle("user_profiles.pkl")
     transaction_list = filter_transaction_list(4, 0.75, transaction_list)
