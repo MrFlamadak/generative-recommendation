@@ -117,7 +117,7 @@ def plot_som(vector_data, article_data):
     fig.update_layout(width=800, height=700)
     fig.show()
 
-    print(sem_data.shape)
+    #print(sem_data.shape)
     print(np.unique([som.winner(x) for x in vector_data], axis=0).shape)
 
 
@@ -160,20 +160,60 @@ def print_transaction_list_dataset_infostats():
     # Count how many customers have each article count
     counts = user_profile_train_df['num_articles'].value_counts().sort_index()
 
-    print(counts.head())
-    print(len(user_profile_train_df))
-    return
+    #Find cut-off for 75%-80% of data
 
+    # [5, 3, 9 ...]
+    print(counts.head())
+    quantile_75 = 0.75
+    quantile_80 = 0.80
+    quantile_85 = 0.85
+    quantile_90 = 0.90
+    total = len(user_profile_train_df)
+
+    sum = 0
+    num_of_articles = 2
+    for i in range(0, len(counts)):
+        article_count = counts.iloc[i]
+        sum = sum + article_count
+        current_fraction = sum/total
+        if(current_fraction >= quantile_75):
+            print(f"{round(current_fraction, 3)*100}% of users have {num_of_articles} or fewer transactions")
+            break
+        num_of_articles = num_of_articles + 1
+
+    return
+def get_cutoff_length_for_given_quantile(transaction_list_df, quantile=0.75):
+    transaction_list_df['num_articles'] = transaction_list_df['article_id'].apply(len)
+
+    # Count how many customers have each article count
+    counts = transaction_list_df['num_articles'].value_counts().sort_index()
+    cutoff_length = 0
+    num_of_articles = counts.index[0]
+    sum = 0
+    total = len(transaction_list_df)
+
+    for i in range(0, len(counts)):
+        article_count = counts.iloc[i]
+        sum = sum + article_count
+        current_fraction = sum/total
+        if(current_fraction >= quantile):
+            print(f"{round(current_fraction, 3)*100}% of users have {num_of_articles} or fewer transactions")
+            return num_of_articles
+        num_of_articles = num_of_articles + 1
+
+    return num_of_articles
 
 
 if __name__ == '__main__':
-    embeddings_data = np.load("SBERT_embeddings_fulldata.npy")
+    '''embeddings_data = np.load("SBERT_embeddings_fulldata.npy")
     print("EMBEDDINGS DATA STATS")
     print_data_stats(embeddings_data)
     sem_data, article_data = dh.get_random_item_to_sem_ids(50)
     print("\nSEMANTIC ID DATA STATS")
     print_data_stats(sem_data)
-    plot_som(sem_data, article_data)
-    print_transaction_list_dataset_infostats()
+    plot_som(sem_data, article_data)'''
+    #print_transaction_list_dataset_infostats()
+    list = pd.read_pickle("user_profiles.pkl")
+    cut_off = get_cutoff_length_for_given_quantile(list, 0.75)
 
 

@@ -5,25 +5,26 @@ from sklearn.metrics.pairwise import cosine_similarity
 
 
 def compute_item_user_matrix():
-    transactions = pd.read_pickle("transactions_train.pkl")
-    transactions["customer_id"] = transactions["customer_id"].astype(str)
-    transactions["article_id"] = transactions["article_id"].astype(str)
-    
-    # map user ids and item ids to integer indices
-    unique_users = transactions["customer_id"].unique()
-    unique_items = transactions["article_id"].unique()
+    transactions = pd.read_pickle("transaction_list_train.pkl")
+    # transactions["customer_id"] = transactions["customer_id"].astype(str)
+    # transactions["article_id"] = transactions["article_id"].astype(str)
+
+    exploded = transactions.explode('article_id')
+    unique_users = exploded['customer_id'].unique()
+    unique_items = exploded['article_id'].unique()
+
     user2idx = {u:i for i,u in enumerate(unique_users)}
     item2idx = {it:i for i,it in enumerate(unique_items)}
 
-    transactions["u_idx"] = transactions["customer_id"].map(user2idx)
-    transactions["i_idx"] = transactions["article_id"].map(item2idx)
+    exploded["u_idx"] = exploded["customer_id"].map(user2idx)
+    exploded["i_idx"] = exploded["article_id"].map(item2idx)
 
     # build user-item interaction matrix
     num_users = len(unique_users)
     num_items = len(unique_items)
-    rows = transactions["u_idx"].values
-    cols = transactions["i_idx"].values
-    data = np.ones(len(transactions), dtype=np.float32)
+    rows = exploded["u_idx"].values
+    cols = exploded["i_idx"].values
+    data = np.ones(len(exploded), dtype=np.float32)
 
     interaction_matrix = csr_matrix((data, (rows, cols)), shape=(num_users, num_items))
 
@@ -61,7 +62,9 @@ def recommend_for_user(user_id, unique_items, user2idx, interaction_matrix, item
 def main():
     unique_items, user2idx, interaction_matrix, item_similarity = compute_item_user_matrix()
 
-    sample_users_id = pd.read_pickle('customers.pkl')["customer_id"][:10]
+    # sample_users_id = pd.read_pickle('customers.pkl')["customer_id"][:10]
+    transactions = pd.read_pickle("transaction_list_train.pkl")
+    sample_users_id = transactions["customer_id"].head(10)
     for user_id in sample_users_id:
         recommended_items = recommend_for_user(user_id, unique_items, user2idx, interaction_matrix, item_similarity, top_k=12)
         print(f"User: {user_id}, recommended items: {recommended_items}")

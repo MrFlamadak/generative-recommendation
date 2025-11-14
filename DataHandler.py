@@ -9,6 +9,9 @@ import scipy as sc
 import matplotlib.pyplot as plt
 from pandas import DataFrame
 
+import data_analyzer
+
+
 def get_article_feature_string_list():
     article_df = pd.read_pickle("articles.pkl")
 
@@ -35,7 +38,7 @@ def create_and_pickle_user_profiles():
 
 def create_train_val_test_user_profiles():
     user_profiles_df = pd.read_pickle("user_profiles.pkl")
-    user_profiles_df = user_profile_preprocessing(user_profiles_df, 2)
+    user_profiles_df = remove_under_threshold(user_profiles_df, 2)
     seed = 42
     user_profiles_shuffled_df = user_profiles_df.sample(frac=1, random_state=seed)
 
@@ -70,7 +73,7 @@ def get_random_item_to_sem_ids(size):
 
     return chosen_sem_ids, chosen_article_data
 
-def user_profile_preprocessing(user_profile, threshold):
+def remove_under_threshold(user_profile, threshold):
     """
     Removes all rows from user_profile where the number of articles
     is less than the given threshold.
@@ -152,3 +155,56 @@ def user_profile_extract_equal_to_threshold(user_profile, threshold):
     preprocessed_user_profile.drop(columns='num_articles', inplace=True)
 
     return preprocessed_user_profile
+
+def remove_over_threshold(user_profile, threshold):
+    """
+    Removes all rows from user_profile where the number of articles
+    exceed the given threshold.
+
+    Parameters
+    ----------
+    user_profile : pd.DataFrame
+        DataFrame with columns ['customer_id', 'article_id'], where 'article_id' is a list.
+    threshold : int
+        number of articles a customer must have to be kept.
+
+    Returns
+    -------
+    pd.DataFrame
+        Filtered DataFrame containing only customers with article counts == threshold.
+    """
+    # Compute number of articles per customer
+    user_profile['num_articles'] = user_profile['article_id'].apply(len)
+
+    # Filter rows based on threshold
+    preprocessed_user_profile = user_profile[user_profile['num_articles'] <= threshold].copy()
+
+    # Optionally drop helper column if not needed
+    preprocessed_user_profile.drop(columns='num_articles', inplace=True)
+
+    return preprocessed_user_profile
+
+def filter_transaction_list(min, quantile, transaction_list):
+    # This function removes all users with less than 4 transactions and finds the maximum cut-off length for including 75%
+    # of the data and removes all users that exceed that length.
+    transaction_list = remove_under_threshold(transaction_list, min)
+    cut_off = data_analyzer.get_cutoff_length_for_given_quantile(transaction_list, quantile)
+    transaction_list = remove_over_threshold(transaction_list, cut_off)
+    print(f"Users with less than {min} and more than {cut_off} transactions have been removed from the transaction_list dataset.")
+    return transaction_list
+
+def split_train_val_test_last_2(transaction_list_df):
+    test = transaction_list_df.copy()
+    val = transaction_list_df.copy()
+    train = transaction_list_df.copy()
+
+    val["article_id"] = val["article_id"].apply(lambda x: x[:-1])
+    train["article_id"] = train["article_id"].apply(lambda x: x[:-2])
+
+    return train, val, test
+
+if __name__ == '__main__':
+    transaction_list = pd.read_pickle("user_profiles.pkl")
+    transaction_list = filter_transaction_list(4, 0.75, transaction_list)
+
+
