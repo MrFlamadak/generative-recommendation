@@ -227,3 +227,6 @@ quantizers/
 
 # quantizer training file
 quantizer_training.ipynb
+
+# png files
+*.png

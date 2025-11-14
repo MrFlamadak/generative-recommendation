@@ -30,30 +30,41 @@ def train():
             customer_transactions_val = pickle.load(f)
 
     print('The files are loaded!')
+    # print(f"Length of customer_transactions_train: {[len(customer_transactions_train[key]) for key in list(customer_transactions_train.keys())[:10]]}")
+    # print(f"Length of customer_transactions_val: {[len(customer_transactions_val[key]) for key in list(customer_transactions_val.keys())[:10]]}")
+    #customer_transactions_train_sub = take_subset_data(customer_transactions_train, frac=0.5, seed=42)
+    customer_transactions_val_sub = take_subset_data(customer_transactions_val, frac=0.2, seed=42)
 
-    customer_transactions_train_sub = take_subset_data(customer_transactions_train, frac=0.1, seed=42)
-    customer_transactions_val_sub = take_subset_data(customer_transactions_val, frac=0.1, seed=42)
+    # print(f"Length of customer_transactions_train_sub: {len(customer_transactions_train_sub.keys())}")
+    # print(f"Length of customer_transactions_val_sub: {len(customer_transactions_val_sub.keys())}")
 
-
-    print('Model is training ...') 
-    window_size = 10
-    unique_sids_train = get_all_unique_sids(customer_transactions_train_sub)
-    unique_sids_val = get_all_unique_sids(customer_transactions_val_sub)
-    all_unique_sids = set(unique_sids_train)
-    for sid in unique_sids_val:
-        all_unique_sids.add(sid)
+    print('Model is training ...')
     
     tokenizer = BartTokenizer.from_pretrained('facebook/bart-base')
-    tokenizer.add_tokens(list(all_unique_sids))
+     # ensure pad token exists (single-token)
+    if tokenizer.pad_token is None:
+        tokenizer.add_special_tokens({"pad_token": "<PAD_ITEM>"})
 
-    model = BartForConditionalGeneration.from_pretrained('facebook/bart-base')
-    # resize model embeddings after adding token to tokenizer
+    tokenizer.padding_side = "left"
+
+    # collect all SIDs and add them (single tokens)
+    sids_train = get_all_unique_sids(customer_transactions_train)
+    sids_val = get_all_unique_sids(customer_transactions_val_sub)
+    all_sids = list(set(sids_train) | set(sids_val))
+    # add tokens
+    tokenizer.add_tokens(all_sids)
+
+    model = BartForConditionalGeneration.from_pretrained("facebook/bart-base")
+    # resize embeddings after we changed tokenizer
     model.resize_token_embeddings(len(tokenizer))
+    model.config.pad_token_id = tokenizer.pad_token_id
 
-    train_dataset = prepare_dataset(customer_transactions_train_sub, window_size, tokenizer)
-    val_dataset = prepare_dataset(customer_transactions_val_sub, window_size, tokenizer)
+    train_dataset = prepare_dataset(customer_transactions_train, window_size=35, tokenizer=tokenizer)
+    val_dataset = prepare_dataset(customer_transactions_val_sub, window_size=36, tokenizer=tokenizer)
     train_model(train_dataset, model, val_dataset)
 
+    # save
+    os.makedirs("./bart-recommender/final_model", exist_ok=True)
     model.save_pretrained('./bart-recommender/final_model')
     tokenizer.save_pretrained('./bart-recommender/final_model')
 

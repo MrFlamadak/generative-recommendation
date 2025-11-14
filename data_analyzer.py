@@ -1,11 +1,11 @@
 import numpy as np
-from minisom import MiniSom
+#from minisom import MiniSom
 from sklearn.metrics import pairwise_distances
 from sklearn.decomposition import PCA
 import DataHandler as dh
-import plotly as plt
+#import plotly as plt
 import pandas as pd
-import plotly.express as px
+#import plotly.express as px
 
 
 def print_data_stats(data):
