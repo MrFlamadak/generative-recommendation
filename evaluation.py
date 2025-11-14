@@ -23,7 +23,9 @@ def MAP_at_K(predicted, labels, K=12):
     scores = []
     for (pred, label) in zip(predicted, labels):
         if len(pred) > K:
-            pred = pred[:K]
+            pred = list(pred[:K])
+        else:
+            pred = list(pred)
             
         if label in pred:
             rank = pred.index(label) + 1
@@ -52,12 +54,3 @@ def recall_at_K(gen, test, K):
     t_p = len(set(pred) & set(test))
     recall = t_p / len(test)
     return recall
-
-predicted = np.array([[1, 2, 3, 4], [2, 3, 4, 5], [3, 4, 5, 6]])
-labels = np.array([3, 5, 7])
-
-print(f"{5 in predicted[2]}")
-
-# print(enumerate(zip(predicted, labels)))
-
-print(MAP_at_K(predicted, labels))
