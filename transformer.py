@@ -10,7 +10,7 @@ from transformers import (
     EarlyStoppingCallback,
     DataCollatorForSeq2Seq
 )
-from torch.utils.data import Dataset, random_split
+from torch.utils.data import Dataset
 
 # device for inference
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -82,7 +82,13 @@ def generate_random_user_histories(num_users=10, min_records=4, max_records=37, 
 
 def sid_token_from_vec(vec):
     """Convert numeric vector to single-token SID like 'SID_12_34_56_78'"""
-    return "SID_" + "_".join(str(x) for x in vec)
+    if isinstance(vec, str):
+        s = vec.strip()
+    elif isinstance(vec, (list, tuple, np.ndarray)):
+        s = " ".join(str(x) for x in vec)
+    else:
+        s = str(vec)
+    return "SID_" + s.replace(" ", "_")
 
 def sid_vec_from_token(token):
     """Convert single-token SID like 'SID_12_34_56_78 to numeric vector"""
@@ -180,11 +186,11 @@ def train_model(train_dataset, model, eval_dataset=None, eval_steps=200, patienc
     log_history = trainer.state.log_history
     os.makedirs('./bart-recommender', exist_ok=True)
 
-     # dump full log history (JSON)
+    # dump full log history (JSON)
     with open('./bart-recommender/training_log_history.json', 'w') as fh:
         json.dump(log_history, fh, indent=2)
     
-    # extract per-step train losses and per-eval eval_losses
+    # extract per-step train losses and eval_losses
     train_losses = [{'step': rec.get('step'), 'loss': rec['loss']} for rec in log_history if 'loss' in rec]
     eval_losses  = [{'step': rec.get('step'), 'eval_loss': rec['eval_loss']} for rec in log_history if 'eval_loss' in rec]
 
