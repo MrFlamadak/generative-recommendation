@@ -82,7 +82,7 @@ def generate_random_user_histories(num_users=10, min_records=4, max_records=37, 
 
 def sid_token_from_vec(vec):
     """Convert numeric vector to single-token SID like 'SID_12_34_56_78'"""
-    return "SID_" + "_".join(str(int(x)) for x in vec)
+    return "SID_" + "_".join(str(x) for x in vec)
 
 def sid_vec_from_token(token):
     """Convert single-token SID like 'SID_12_34_56_78 to numeric vector"""
@@ -131,12 +131,12 @@ def prepare_dataset(user_histories, window_size, tokenizer):
 
 
 # train
-def train_model(train_dataset, model, eval_dataset=None, eval_steps=200, patience=3, grad_accum_steps=1, num_workers=4):
+def train_model(train_dataset, model, eval_dataset=None, eval_steps=200, patience=5, grad_accum_steps=1, num_workers=4):
 
     training_args = TrainingArguments(
         output_dir = './bart-recommender',
-        num_train_epochs=5,
-        per_device_train_batch_size=128, # incr
+        num_train_epochs=3,
+        per_device_train_batch_size=512, # increase if needed
         gradient_accumulation_steps=grad_accum_steps,
         dataloader_num_workers=num_workers,
         dataloader_pin_memory=True,
@@ -206,6 +206,7 @@ def recommended_next_sid(history, model, tokenizer, window_size=36, top_k=5):
     history: list of item-strings, where each item-string is either pad token or an SID token (e.g., 'SID_12_34_56_78')
     Returns: list of SID strings (decoded)
     """
+    history = [sid_token_from_vec(vec) for vec in history]
     input_len = max(1, window_size - 1)
     pad_token = tokenizer.pad_token if tokenizer.pad_token is not None else "<PAD_ITEM>"
 
@@ -228,7 +229,8 @@ def recommended_next_sid(history, model, tokenizer, window_size=36, top_k=5):
         early_stopping=True,
     )
     recommendations = [tokenizer.decode(ids, skip_special_tokens=True).strip() for ids in output_ids]
-    return recommendations
+
+    return [sid_vec_from_token(rec) for rec in recommendations]
 
 
 def is_model_trained(model_dir="./bart-recommender/final_model"):
@@ -285,10 +287,10 @@ def main():
 
     # Example inference (use SID tokens in history format)
     # Create an example history of SID tokens (must match SID token string format)
-    test_history = ["SID_110_450_228_503", "SID_28_450_349_425", "SID_28_450_349_425"]
+    test_history = ['110 450 228 503', '28 450 349 425', '28 450 349 425']
     model = model.to(device)
     recs = recommended_next_sid(test_history, model, tokenizer, window_size=window_size, top_k=5)
-    print("Recommended SIDs:", [sid_vec_from_token(rec) for rec in recs])
+    print("Recommended SIDs:", recs)
 
 
 if __name__ == "__main__":
