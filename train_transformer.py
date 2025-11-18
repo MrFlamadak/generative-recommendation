@@ -45,7 +45,7 @@ def train():
     if tokenizer.pad_token is None:
         tokenizer.add_special_tokens({"pad_token": "<PAD_ITEM>"})
 
-    tokenizer.padding_side = "left"
+    tokenizer.padding_side = "right"
 
     # collect all SIDs and add them (single tokens)
     sids_train = get_all_unique_sids(customer_transactions_train)

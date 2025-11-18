@@ -20,7 +20,7 @@ class RecommendationDataset(Dataset):
     """
     sequences: list of tuples (input_seq_str, target_seq_str)
                where input_seq_str is a space-separated list of item-tokens
-               (already left-padded to fixed item count when prepared),
+               (already right-padded to fixed item count when prepared),
                and target_seq_str is a single item-token string.
     tokenizer: HF tokenizer
     input_length_items: number of item-tokens expected in encoder input (max_length)
@@ -36,7 +36,7 @@ class RecommendationDataset(Dataset):
 
     def __getitem__(self, idx):
         input_seq, target = self.sequences[idx]
-        # Tokenize encoder input (left padding is handled by tokenizer.padding_side)
+        # Tokenize encoder input (right padding is handled by tokenizer.padding_side)
         enc = self.tokenizer(
             input_seq,
             padding="max_length",
@@ -109,7 +109,7 @@ def prepare_dataset(user_histories, window_size, tokenizer):
     """
     Build (input, target) pairs.
     - window_size: the window includes the target, so encoder input uses (window_size - 1) items.
-    - The encoder input will be left-padded to exactly input_len items (item tokens).
+    - The encoder input will be right-padded to exactly input_len items (item tokens).
     """
     input_len = max(1, window_size - 1)  # number of item tokens to use as encoder input
     pad_token = tokenizer.pad_token if tokenizer.pad_token is not None else "<PAD_ITEM>"
@@ -127,27 +127,27 @@ def prepare_dataset(user_histories, window_size, tokenizer):
         input_items_vecs = history[:-1][-input_len:]
         item_tokens = [sid_token_from_vec(v) for v in input_items_vecs]
         pad_needed = input_len - len(item_tokens)
-        padded_items = [pad_token] * pad_needed + item_tokens
+        padded_items = item_tokens + [pad_token] * pad_needed
 
         # join tokens with spaces (this yields exactly input_len tokens)
-        input_seq = " " + " ".join(padded_items)
+        input_seq = " ".join(padded_items)
         all_sequences.append((input_seq, target_token))
 
     return RecommendationDataset(all_sequences, tokenizer, input_len)
 
 
 # train
-def train_model(train_dataset, model, eval_dataset=None, eval_steps=200, patience=5, grad_accum_steps=1, num_workers=4):
+def train_model(train_dataset, model, eval_dataset=None, eval_steps=100, patience=5, grad_accum_steps=1, num_workers=4):
 
     training_args = TrainingArguments(
         output_dir = './bart-recommender',
         num_train_epochs=3,
-        per_device_train_batch_size=512, # increase if needed
+        per_device_train_batch_size=1024, # increase if needed
         gradient_accumulation_steps=grad_accum_steps,
         dataloader_num_workers=num_workers,
         dataloader_pin_memory=True,
-        logging_steps=200,
-        save_steps=200,
+        logging_steps=100,
+        save_steps=100,
         save_total_limit=2,
         remove_unused_columns=False,
         report_to=[],
@@ -219,10 +219,10 @@ def recommended_next_sid(history, model, tokenizer, window_size=36, top_k=5):
     # keep last input_len items and left-pad if needed
     input_items = history[-input_len:]
     pad_needed = input_len - len(input_items)
-    padded_items = [pad_token] * pad_needed + input_items
+    padded_items = input_items + [pad_token] * pad_needed
 
     # join into a space-separated string of item-tokens
-    input_seq = " " + " ".join(padded_items)
+    input_seq = " ".join(padded_items)
     enc = tokenizer(input_seq, return_tensors="pt", padding="max_length", truncation="longest_first", max_length=input_len)
     enc = {k: v.to(device) for k, v in enc.items()}
 
@@ -263,7 +263,7 @@ def main():
         if tokenizer.pad_token is None:
             tokenizer.add_special_tokens({"pad_token": "<PAD_ITEM>"})
 
-        tokenizer.padding_side = "left"
+        tokenizer.padding_side = "right"
 
         # collect all SIDs and add them (single tokens)
         sids_train = get_all_unique_sids(user_histories_train)
