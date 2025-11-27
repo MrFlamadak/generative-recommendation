@@ -32,6 +32,38 @@ def sample_random_pairs(item_ids, similar_pairs, k, seed=42):
 
     return list(random_pairs)
 
+
+def sample_sim_and_random_pairs(item_ids, similar_pairs, k, seed=42):
+    random.seed(seed)
+
+    # Set of true similar pairs to avoid
+    similar_set = {tuple(sorted(p)) for p in similar_pairs}
+    random_pairs = set()
+
+    # Generate exactly k random pairs
+    while len(random_pairs) < k:
+        # Take first element of the corresponding similar pair
+        a, _ = similar_pairs[len(random_pairs)]
+
+        # Pick random item
+        b = random.choice(item_ids)
+
+        # Skip if matching itself
+        if b == a:
+            continue
+
+        # Construct sorted pair tuple
+        pair = tuple(sorted((a, b)))
+
+        # Skip if it's an actual similar pair or already sampled
+        if pair in similar_set or pair in random_pairs:
+            continue
+
+        random_pairs.add(pair)
+    print(len(list(random_pairs)))
+
+    return list(random_pairs)
+
 def get_embeddings_dict(item_2_semantic, embeddings_matrix):
 
     embeddings_dict = {aid: embeddings for embeddings, aid in zip(embeddings_matrix, item_2_semantic)}
@@ -54,7 +86,7 @@ def compare_cosine(embeddings_lookup, similar_pairs, item_ids,
 
     # 1. Generate random pairs ONLY if not given
     if random_pairs is None:
-        random_pairs = sample_random_pairs(
+        random_pairs = sample_sim_and_random_pairs(
             item_ids=item_ids,
             similar_pairs=similar_pairs,
             k=len(similar_pairs),
@@ -73,7 +105,7 @@ def compare_cosine(embeddings_lookup, similar_pairs, item_ids,
         for a, b in random_pairs
     ]
     print("Cosine-Similarity scores from top to bottom")
-    pairs_and_scores = list(zip(sim_true, similar_pairs))
+    pairs_and_scores = list(zip(sim_rand, random_pairs))
 
     # Sort by score (index 0 in each tuple), descending
     pairs_and_scores_sorted = sorted(pairs_and_scores, key=lambda x: x[0], reverse=True)
@@ -82,13 +114,13 @@ def compare_cosine(embeddings_lookup, similar_pairs, item_ids,
     print("Pairs                   Cosine-Similarity Score")
     for score, pair in pairs_and_scores_sorted:
         print(f"({pair[0]}, {pair[1]})  {score:.4f}")
-    print(random_pairs)
     # 4. return both the scores AND the random pairs used
     return sim_true, sim_rand, random_pairs
 
 def cosine_sim_boxplot(sim_scores_true, sim_scores_random):
+
     # -------------------------------------------------
-    # Statistical significance (optional)
+    # Statistical significance
     # -------------------------------------------------
     stat, pvalue = mannwhitneyu(sim_scores_true, sim_scores_random, alternative='greater')
     print(f"Mann–Whitney U test p-value = {pvalue:.4g}")
@@ -96,22 +128,48 @@ def cosine_sim_boxplot(sim_scores_true, sim_scores_random):
     # -------------------------------------------------
     # Visualization
     # -------------------------------------------------
-    data = {
+    data = pd.DataFrame({
         "Cosine Similarity": sim_scores_true + sim_scores_random,
         "Group": (["True Similar"] * len(sim_scores_true) +
                   ["Random"] * len(sim_scores_random))
-    }
+    })
 
     plt.figure(figsize=(6, 4))
-    sns.boxplot(x="Group", y="Cosine Similarity", data=data)
-    sns.stripplot(x="Group", y="Cosine Similarity", data=data, color='black', alpha=0.4)
 
-    plt.title("Cosine Similarity Distribution: True vs Random Pairs 384D Embeddings")
+    # Boxplot
+    sns.boxplot(
+        x="Group",
+        y="Cosine Similarity",
+        data=data,
+        showcaps=True,
+        showfliers=False,  # often cleaner
+        width=0.5
+    )
+
+    # Stripplot (corrected marker control)
+    sns.stripplot(
+        x="Group",
+        y="Cosine Similarity",
+        data=data,
+        jitter=0.25,
+        size=5,
+        marker='o',
+        edgecolor='black',
+        linewidth=0.5,
+        facecolor=(0, 0, 0, 0.20),  # explicitly set facecolor with alpha
+    )
+
+    plt.title("Cosine Similarity: True vs Random Pairs (384D Embeddings)")
+    plt.tight_layout()
     plt.show()
-    return
+
 
 if __name__ == '__main__':
-
+    article_df = pd.read_pickle('articles.pkl')
+    row1 = article_df.loc[article_df["article_id"] == 179393001].squeeze()
+    print(row1)
+    row2 = article_df.loc[article_df["article_id"] == 179208008].squeeze()
+    print(row2)
     # Manually curated similar Article pairs
     similar_pairs = [
         ('108775015', '108775044'),
@@ -147,8 +205,8 @@ if __name__ == '__main__':
         item_ids=item_ids,
         seed=42
     )
-    print(f"Mean cosim:{np.array(sim_true_sem).mean()}")
-    print(f"Mean cosim:{np.array(sim_rand_sem).mean()}")
+    print(f"Sim Mean cosim:{np.array(sim_true_sem).mean()}")
+    print(f"Sim and Random Mean cosim:{np.array(sim_rand_sem).mean()}")
 
     cosine_sim_boxplot(sim_true_sem, sim_rand_sem)
 
