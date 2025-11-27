@@ -225,8 +225,5 @@ quantizers/
 # DS_Store files
 .DS_Store
 
-# quantizer training file
-quantizer_training.ipynb
-
 # png files
 *.png
