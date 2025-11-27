@@ -159,7 +159,7 @@ def cosine_sim_boxplot(sim_scores_true, sim_scores_random):
         facecolor=(0, 0, 0, 0.20),  # explicitly set facecolor with alpha
     )
 
-    plt.title("Cosine Similarity: True vs Random Pairs (384D Embeddings)")
+    plt.title("Cosine Similarity: True vs Random Pairs (5D SPIDs)")
     plt.tight_layout()
     plt.show()
 
@@ -193,13 +193,13 @@ if __name__ == '__main__':
         ('224314007', '224314018'),
         ('233091003', '233091016'),
     ]
-    embeddings_matrix = np.load('SBERT_embeddings_fulldata.npy')
-    item_2_semantic = pd.read_pickle("item_2_semantic.pkl")
+    embeddings_matrix = np.load('bert-large_embeddings.npy')
+    item_2_semantic = pd.read_pickle("item_2_semantic_20251127_132421.pkl")
     item_ids = list(item_2_semantic.keys())
     item_2_embedding = get_embeddings_dict(item_ids, embeddings_matrix)
 
     sim_true_sem, sim_rand_sem, random_pairs_used = compare_cosine(
-        embeddings_lookup=item_2_embedding,
+        embeddings_lookup=item_2_semantic,
         similar_pairs=similar_pairs,
         random_pairs=None,
         item_ids=item_ids,
