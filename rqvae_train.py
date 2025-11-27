@@ -82,9 +82,10 @@ def train_rqvae_full(rqvae, embeddings, epochs=100, batch_size=256, lr=1e-3, sav
                 'model_state_dict': rqvae.state_dict(),
                 'optimizer_state_dict': optimizer.state_dict(),
                 'loss': avg_loss,
+                'losses': losses
             }, checkpoint_path)
         
-            if verbose:
+            if verbose and (epoch+1) & checkpoint_freq == 0:
                 print(f'saved checkpoint at epoch {epoch+1}')
 
         # check early stopping criteria
