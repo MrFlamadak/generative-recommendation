@@ -1,6 +1,6 @@
 import os
 import pickle
-from transformer import prepare_dataset, train_model, get_all_unique_sids, is_model_trained
+from transformer import prepare_dataset, train_model, get_all_unique_tokens_in_sids
 from transformers import BartTokenizer, BartForConditionalGeneration
 import random
 
@@ -47,10 +47,12 @@ def train():
 
     tokenizer.padding_side = "right"
 
-    # collect all SIDs and add them (single tokens)
-    sids_train = get_all_unique_sids(customer_transactions_train)
-    sids_val = get_all_unique_sids(customer_transactions_val_sub)
-    all_sids = list(set(sids_train) | set(sids_val))
+    item_to_semantics = {}
+    if os.path.exists('/Users/mahdinazari/Documents/GitHub/generative-recommendation/quantizers/rqvae_training_results_20251127_132421/item_2_semantic_20251127_132421.pkl'):
+        with open('/Users/mahdinazari/Documents/GitHub/generative-recommendation/quantizers/rqvae_training_results_20251127_132421/item_2_semantic_20251127_132421.pkl', 'rb') as f:
+            item_to_semantics = pickle.load(f)
+    all_sids = get_all_unique_tokens_in_sids(item_to_semantics)
+
     # add tokens
     tokenizer.add_tokens(all_sids)
 
@@ -61,6 +63,15 @@ def train():
 
     train_dataset = prepare_dataset(customer_transactions_train, window_size=35, tokenizer=tokenizer)
     val_dataset = prepare_dataset(customer_transactions_val_sub, window_size=36, tokenizer=tokenizer)
+    # for i, (input, target) in enumerate(train_dataset.sequences):
+    #     print(f"{i}: INPUT = {input} --> TARGET = {target}\n")
+    #     print(len(input.split()),", " ,len(target.split()))
+    #     break
+    # for i, (input, target) in enumerate(val_dataset.sequences):
+    #     print(f"{i}: INPUT = {input} --> TARGET = {target}\n")
+    #     print(len(input.split()),", " ,len(target.split()))
+    #     break
+    # return
     train_model(train_dataset, model, val_dataset)
 
     # save

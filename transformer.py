@@ -1,4 +1,5 @@
 import os
+import pickle
 import json, csv
 import numpy as np
 import torch
@@ -14,6 +15,8 @@ from torch.utils.data import Dataset
 
 # device for inference
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+Q = 6 # number of codebooks, length of SID 
 
 
 class RecommendationDataset(Dataset):
@@ -41,7 +44,7 @@ class RecommendationDataset(Dataset):
             input_seq,
             padding="max_length",
             truncation="longest_first",
-            max_length=self.input_length_items,
+            max_length=self.input_length_items * Q, # 
             return_tensors="pt"
         )
 
@@ -50,7 +53,7 @@ class RecommendationDataset(Dataset):
             target,
             padding="max_length",
             truncation=False,
-            max_length=1,  # single item token as target
+            max_length=Q + 2,  # single SID, which contains 6 items + EOS, BOS
             return_tensors="pt"
         )
 
@@ -68,7 +71,7 @@ class RecommendationDataset(Dataset):
 
 
 #  Synthetic data generation
-def generate_random_user_histories(num_users=10, min_records=4, max_records=37, vector_size=4, min_value=1, max_value=999):
+def generate_random_user_histories(num_users=10, min_records=4, max_records=37, vector_size=6, min_value=1, max_value=999):
     user_histories = {}
     for i in range(1, num_users + 1):
         num_records = np.random.randint(min_records, max_records + 1)  # inclusive upper bound
@@ -80,29 +83,48 @@ def generate_random_user_histories(num_users=10, min_records=4, max_records=37, 
     return user_histories
 
 
-def sid_token_from_vec(vec):
-    """Convert numeric vector to single-token SID like 'SID_12_34_56_78'"""
-    if isinstance(vec, str):
-        s = vec.strip()
-    elif isinstance(vec, (list, tuple, np.ndarray)):
-        s = " ".join(str(x) for x in vec)
-    else:
-        s = str(vec)
-    return "SID_" + s.replace(" ", "_")
-
-def sid_vec_from_token(token):
-    """Convert single-token SID like 'SID_12_34_56_78 to numeric vector"""
-    token_split = token.split('_')
-    return ' '.join(str(x) for x in token_split[1:])
+def sid_string_from_vec(vec):
+    """Convert numeric vector to string vector "C0_12 C1_13 C2_14 C3_15 C4_16 C5_0"""
+    return " ".join([f"C{i}_{v}" for i,v in enumerate(vec)])
 
 
-def get_all_unique_sids(user_histories):
+def sid_vec_from_string(decoded_string):
+    """Convert string vector "C0_12 C1_13 C2_14 C3_15 C4_16 C5_0" vector to a numeric vector"""
+    tokens = decoded_string.split()
+    vec = []
+    for tok in tokens:
+        if tok.startswith("C") and "_" in tok:
+            try:
+                q, val = tok.split("_")
+                vec.append(int(val))
+            except:
+                pass
+    return vec[:Q]  # to make sure about correct length
+
+
+def get_all_unique_sid(user_histories):
+    """
+    This function is used for the test case with mock-up dada
+    """
     unique_sids = set()
     for history in user_histories.values():
         for vec in history:
-            unique_sids.add(sid_token_from_vec(vec))
+            unique_sids.add(sid_string_from_vec(vec))
     return list(unique_sids)
 
+def get_all_unique_tokens_in_sids(item_to_semantics):
+    """
+    This function gets the item_to_semantics and returns a set of
+    distinct tokens from all SIDs
+    """
+    unique_tokens_in_sids = set()
+    for sid in item_to_semantics.values(): # 12 13 14 15
+        # unique_sids.add(sid_string_from_vec(sid)) # C0_1 ..
+        for i, element in enumerate(sid):
+            # print("YOYO:", element)
+            unique_tokens_in_sids.add(f"C{i}_{element}")
+    
+    return list(unique_tokens_in_sids)
 
 # dataset creation 
 def prepare_dataset(user_histories, window_size, tokenizer):
@@ -121,15 +143,18 @@ def prepare_dataset(user_histories, window_size, tokenizer):
         
         # target is last item in this simplified setup
         label_vec = history[-1]
-        target_token = sid_token_from_vec(label_vec)
+        target_token = sid_string_from_vec(label_vec)
 
         # take up to input_len items before the last one
         input_items_vecs = history[:-1][-input_len:]
-        item_tokens = [sid_token_from_vec(v) for v in input_items_vecs]
+        item_tokens = [sid_string_from_vec(v) for v in input_items_vecs]
         pad_needed = input_len - len(item_tokens)
-        padded_items = item_tokens + [pad_token] * pad_needed
-
-        # join tokens with spaces (this yields exactly input_len tokens)
+        #padded_items = item_tokens + [pad_token] * Q * pad_needed # right padded
+        padded_items = []
+        padded_items.extend(item_tokens)                
+        for _ in range(pad_needed):
+            padded_items.extend([pad_token] * Q)  # join tokens with spaces (this yields exactly input_len tokens)
+                
         input_seq = " ".join(padded_items)
         all_sequences.append((input_seq, target_token))
 
@@ -137,17 +162,21 @@ def prepare_dataset(user_histories, window_size, tokenizer):
 
 
 # train
-def train_model(train_dataset, model, eval_dataset=None, eval_steps=100, patience=5, grad_accum_steps=1, num_workers=4):
+def train_model(train_dataset, model, eval_dataset=None, eval_steps=200, patience=5, grad_accum_steps=1, num_workers=4):
 
     training_args = TrainingArguments(
         output_dir = './bart-recommender',
-        num_train_epochs=3,
-        per_device_train_batch_size=1024, # increase if needed
+        num_train_epochs=8, # increase to 7 or 8 to see the trend
+        per_device_train_batch_size=512, # increase if needed
         gradient_accumulation_steps=grad_accum_steps,
         dataloader_num_workers=num_workers,
         dataloader_pin_memory=True,
-        logging_steps=100,
-        save_steps=100,
+        learning_rate=3e-5,           
+        lr_scheduler_type="cosine",
+        warmup_steps=500,
+        weight_decay=0.01,
+        logging_steps=200,
+        save_steps=200,
         save_total_limit=2,
         remove_unused_columns=False,
         report_to=[],
@@ -207,36 +236,62 @@ def train_model(train_dataset, model, eval_dataset=None, eval_steps=100, patienc
 
 
 # inference
-def recommended_next_sid(history, model, tokenizer, window_size=36, top_k=5):
-    """
-    history: list of item-strings, where each item-string is either pad token or an SID token (e.g., 'SID_12_34_56_78')
-    Returns: list of SID strings (decoded)
-    """
-    history = [sid_token_from_vec(vec) for vec in history]
+def recommended_next_sid(history, model, tokenizer, window_size=36, top_k=1):
+  
     input_len = max(1, window_size - 1)
     pad_token = tokenizer.pad_token if tokenizer.pad_token is not None else "<PAD_ITEM>"
 
-    # keep last input_len items and left-pad if needed
-    input_items = history[-input_len:]
-    pad_needed = input_len - len(input_items)
-    padded_items = input_items + [pad_token] * pad_needed
 
-    # join into a space-separated string of item-tokens
-    input_seq = " ".join(padded_items)
-    enc = tokenizer(input_seq, return_tensors="pt", padding="max_length", truncation="longest_first", max_length=input_len)
+    # take up to input_len items before the last one
+    input_items = history[-input_len:]
+    item_tokens = []
+    for it in input_items:
+        if isinstance(it, str):
+            s = it.strip()
+            if not s:
+                continue
+            parts = [int(x) for x in s.split() if x.strip()]
+            item_tokens.append(sid_string_from_vec(parts))
+        else:
+            continue
+    
+    pad_needed = input_len - len(item_tokens)
+
+    # build input tokens
+    tokens = []
+    for item in item_tokens:
+        tokens.extend(item.split())
+    for _ in range(pad_needed):
+        tokens.extend([pad_token] * Q)
+
+    input_seq = " ".join(tokens)
+    
+
+    enc = tokenizer(input_seq, return_tensors="pt",
+                    max_length=input_len * Q,
+                    padding="max_length",
+                    truncation="longest_first")
+
     enc = {k: v.to(device) for k, v in enc.items()}
 
-    model = model.to(device)
-    output_ids = model.generate(
+    outputs = model.generate(
         enc["input_ids"],
         attention_mask=enc["attention_mask"],
-        num_beams=max(top_k, 5),
+        num_beams=max(top_k, 1),
         num_return_sequences=top_k,
-        early_stopping=True,
+        #max_length=Q + 8,
+        max_new_tokens=Q+8,
+        early_stopping=True
     )
-    recommendations = [tokenizer.decode(ids, skip_special_tokens=True).strip() for ids in output_ids]
 
-    return [sid_vec_from_token(rec) for rec in recommendations]
+    results = []
+    for seq in outputs:
+        decoded = tokenizer.decode(seq, skip_special_tokens=True)
+        vec = sid_vec_from_string(decoded)
+        results.append(vec)
+
+    return results
+
 
 
 def is_model_trained(model_dir="./bart-recommender/final_model"):
@@ -266,10 +321,10 @@ def main():
         tokenizer.padding_side = "right"
 
         # collect all SIDs and add them (single tokens)
-        sids_train = get_all_unique_sids(user_histories_train)
-        sids_val = get_all_unique_sids(user_histories_val)
+        sids_train = get_all_unique_sid(user_histories_train)
+        sids_val = get_all_unique_sid(user_histories_val)
         all_sids = list(set(sids_train) | set(sids_val))
-        # add tokens
+    
         tokenizer.add_tokens(all_sids)
 
         model = BartForConditionalGeneration.from_pretrained("facebook/bart-base")
@@ -278,13 +333,15 @@ def main():
         model.config.pad_token_id = tokenizer.pad_token_id
 
         # prepare datasets
-        train_dataset = prepare_dataset(user_histories_train, window_size, tokenizer)
-        val_dataset = prepare_dataset(user_histories_val, window_size, tokenizer)
+        train_dataset = prepare_dataset(user_histories_train, 35, tokenizer)
+        val_dataset = prepare_dataset(user_histories_val, 36, tokenizer)
         # for i, (input, target) in enumerate(val_dataset.sequences):
-        #     print(f"{i}: INPUT = {input} --> TARGET = {target}")
+        #     print(f"{i}: INPUT = {input} --> TARGET = {target}\n")
+        #     print(len(input),", " ,len(target))
+        # return
        
         # train
-        train_model(train_dataset, model, eval_dataset=val_dataset, eval_steps=50, patience=3)
+        train_model(train_dataset, model, eval_dataset=val_dataset, eval_steps=4, patience=3)
 
         # save
         os.makedirs("./bart-recommender/final_model", exist_ok=True)
@@ -301,3 +358,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+    
