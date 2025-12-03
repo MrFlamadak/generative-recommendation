@@ -14,7 +14,7 @@ def take_subset_data(dict, frac=0.1, seed=42):
     subset = {sample_k:dict[sample_k] for sample_k in sampled_keys}
     return subset
 
-def train():
+def start_training():
     """
     This trainer function is constructed to be run at the end with the enitire 
     train and val datasets.
