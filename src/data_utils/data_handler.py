@@ -2,6 +2,7 @@ import encodings
 import random
 import string
 from os import write
+import os
 
 import pandas as pd
 import numpy as np
@@ -12,7 +13,39 @@ from pandas import DataFrame
 from data_utils import data_analyzer
 
 # A, C, T csv -> pckl -> User_profiles.pck -> train, test, val pckls
-#def csv_to_pickle("root\data\article.csv")
+def csv_to_pickle():
+    if os.path.exists("./../../data/articles.csv"):
+        if not os.path.exists("./../../data/articles.pkl"):
+            articles = pd.read_csv("./../../data/articles.csv")
+            articles.to_pickle("./../../data/articles.pkl")
+
+            print("Saved articles.pkl successfully")
+        else: print("articles.pkl already exists. Skipping.")
+    else:
+        print("articles.csv does not exist. Make sure it is in the data/ directory.")
+    
+    if os.path.exists("./../../data/customers.csv"):
+        if not os.path.exists("./../../data/customers.pkl"):
+            customers = pd.read_csv("./../../data/customers.csv")
+            customers.to_pickle("./../../data/customers.pkl")
+
+            print("Saved customers.pkl successfully")
+        else: print("customers.pkl already exists. Skipping.")
+    else:
+        print("customers.csv does not exist. Make sure it is in the data/ directory.")
+    
+    if os.path.exists("./../../data/transactions_train.csv"):
+        if not os.path.exists("./../../data/transactions_train.pkl"):
+            transactions = pd.read_csv("./../../data/transactions_train.csv")
+            transactions.to_pickle("./../../data/transactions_train.pkl")
+
+            print("Saved transactions_train.pkl successfully")
+        else: print("transactions_train.pkl already exists. Skipping.")
+    else:
+        print("transactions_train.csv does not exist. Make sure it is in the data/ directory.")
+    
+    print("Done.")
+    
 def get_article_feature_string_list():
     article_df = pd.read_pickle("data/articles.pkl")
 
