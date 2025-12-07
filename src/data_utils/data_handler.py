@@ -9,11 +9,12 @@ import scipy as sc
 import matplotlib.pyplot as plt
 from pandas import DataFrame
 
-import data_analyzer
+from data_utils import data_analyzer
 
-
+# A, C, T csv -> pckl -> User_profiles.pck -> train, test, val pckls
+#def csv_to_pickle("root\data\article.csv")
 def get_article_feature_string_list():
-    article_df = pd.read_pickle("articles.pkl")
+    article_df = pd.read_pickle("data/articles.pkl")
 
     article_df_no_numbers = article_df[["article_id", "graphical_appearance_name", "perceived_colour_value_name",
                                         "perceived_colour_master_name", "prod_name", "detail_desc",
@@ -25,17 +26,17 @@ def get_article_feature_string_list():
     })
 
     return article_df_strings.values.tolist()
+
 def create_and_pickle_user_profiles():
 
     #Creates a user profile for each customer containing article ids of all articles that have been bought.
-    transactions_df = pd.read_pickle("transactions_train.pkl")
     transactions_df = pd.read_pickle("transactions_train.pkl")
     user_profiles_df = transactions_df.groupby("customer_id", as_index=False)["article_id"].agg(list)
 
     user_profiles_df.to_pickle("user_profiles.pkl")
     return user_profiles_df
 
-
+# Maybe delete
 def create_train_val_test_user_profiles():
     user_profiles_df = pd.read_pickle("user_profiles.pkl")
     user_profiles_df = remove_under_threshold(user_profiles_df, 2)
