@@ -13,31 +13,31 @@ from pandas import DataFrame
 from data_utils import data_analyzer
 
 # A, C, T csv -> pckl -> User_profiles.pck -> train, test, val pckls
-def csv_to_pickle():
-    if os.path.exists("./../../data/articles.csv"):
-        if not os.path.exists("./../../data/articles.pkl"):
-            articles = pd.read_csv("./../../data/articles.csv")
-            articles.to_pickle("./../../data/articles.pkl")
+def csv_to_pickle(data_directory):
+    if os.path.exists(f"{data_directory}/articles.csv"):
+        if not os.path.exists(f"{data_directory}/articles.pkl"):
+            articles = pd.read_csv(f"{data_directory}/articles.csv")
+            articles.to_pickle(f"{data_directory}/articles.pkl")
 
             print("Saved articles.pkl successfully")
         else: print("articles.pkl already exists. Skipping.")
     else:
         print("articles.csv does not exist. Make sure it is in the data/ directory.")
     
-    if os.path.exists("./../../data/customers.csv"):
-        if not os.path.exists("./../../data/customers.pkl"):
-            customers = pd.read_csv("./../../data/customers.csv")
-            customers.to_pickle("./../../data/customers.pkl")
+    if os.path.exists(f"{data_directory}/customers.csv"):
+        if not os.path.exists(f"{data_directory}customers.pkl"):
+            customers = pd.read_csv(f"{data_directory}/customers.csv")
+            customers.to_pickle(f"{data_directory}/customers.pkl")
 
             print("Saved customers.pkl successfully")
         else: print("customers.pkl already exists. Skipping.")
     else:
         print("customers.csv does not exist. Make sure it is in the data/ directory.")
     
-    if os.path.exists("./../../data/transactions_train.csv"):
-        if not os.path.exists("./../../data/transactions_train.pkl"):
-            transactions = pd.read_csv("./../../data/transactions_train.csv")
-            transactions.to_pickle("./../../data/transactions_train.pkl")
+    if os.path.exists(f"{data_directory}/transactions_train.csv"):
+        if not os.path.exists(f"{data_directory}/transactions_train.pkl"):
+            transactions = pd.read_csv(f"{data_directory}/transactions_train.csv")
+            transactions.to_pickle(f"{data_directory}/transactions_train.pkl")
 
             print("Saved transactions_train.pkl successfully")
         else: print("transactions_train.pkl already exists. Skipping.")
