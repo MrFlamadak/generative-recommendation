@@ -1,8 +1,9 @@
 import os
 import pickle
-from transformer import prepare_dataset, train_model, get_all_unique_tokens_in_sids
+from src.components.transformer.transformer import prepare_dataset, train_model, get_all_unique_tokens_in_sids
 from transformers import BartTokenizer, BartForConditionalGeneration
 import random
+
 
 def take_subset_data(dict, frac=0.1, seed=42):
     if not dict:
@@ -11,12 +12,13 @@ def take_subset_data(dict, frac=0.1, seed=42):
     keys = list(dict.keys())
     k = max(1, int(len(keys) * frac))
     sampled_keys = rng.sample(keys, k)
-    subset = {sample_k:dict[sample_k] for sample_k in sampled_keys}
+    subset = {sample_k: dict[sample_k] for sample_k in sampled_keys}
     return subset
+
 
 def start_training():
     """
-    This trainer function is constructed to be run at the end with the enitire 
+    This trainer function is constructed to be run at the end with the enitire
     train and val datasets.
     """
 
@@ -32,24 +34,27 @@ def start_training():
     print('The files are loaded!')
     # print(f"Length of customer_transactions_train: {[len(customer_transactions_train[key]) for key in list(customer_transactions_train.keys())[:10]]}")
     # print(f"Length of customer_transactions_val: {[len(customer_transactions_val[key]) for key in list(customer_transactions_val.keys())[:10]]}")
-    #customer_transactions_train_sub = take_subset_data(customer_transactions_train, frac=0.5, seed=42)
+    # customer_transactions_train_sub = take_subset_data(customer_transactions_train, frac=0.5, seed=42)
     customer_transactions_val_sub = take_subset_data(customer_transactions_val, frac=0.2, seed=42)
 
     # print(f"Length of customer_transactions_train_sub: {len(customer_transactions_train_sub.keys())}")
     # print(f"Length of customer_transactions_val_sub: {len(customer_transactions_val_sub.keys())}")
 
     print('Model is training ...')
-    
+
     tokenizer = BartTokenizer.from_pretrained('facebook/bart-base')
-     # ensure pad token exists (single-token)
+    # ensure pad token exists (single-token)
     if tokenizer.pad_token is None:
         tokenizer.add_special_tokens({"pad_token": "<PAD_ITEM>"})
 
     tokenizer.padding_side = "right"
 
     item_to_semantics = {}
-    if os.path.exists('/Users/mahdinazari/Documents/GitHub/generative-recommendation/quantizers/rqvae_training_results_20251127_132421/item_2_semantic_20251127_132421.pkl'):
-        with open('/Users/mahdinazari/Documents/GitHub/generative-recommendation/quantizers/rqvae_training_results_20251127_132421/item_2_semantic_20251127_132421.pkl', 'rb') as f:
+    if os.path.exists(
+            '/Users/mahdinazari/Documents/GitHub/generative-recommendation/quantizers/rqvae_training_results_20251127_132421/item_2_semantic_20251127_132421.pkl'):
+        with open(
+                '/Users/mahdinazari/Documents/GitHub/generative-recommendation/quantizers/rqvae_training_results_20251127_132421/item_2_semantic_20251127_132421.pkl',
+                'rb') as f:
             item_to_semantics = pickle.load(f)
     all_sids = get_all_unique_tokens_in_sids(item_to_semantics)
 
@@ -79,8 +84,10 @@ def start_training():
     model.save_pretrained('./bart-recommender/final_model')
     tokenizer.save_pretrained('./bart-recommender/final_model')
 
+
 def main():
     train()
+
 
 if __name__ == '__main__':
     main()
