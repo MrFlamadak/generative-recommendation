@@ -1,6 +1,6 @@
 import os
 import pickle
-from src.components.transformer.transformer import prepare_dataset, train_model, get_all_unique_tokens_in_sids
+from src.components.transformer.transformer import prepare_dataset, train_model, get_all_unique_sids, is_model_trained
 from transformers import BartTokenizer, BartForConditionalGeneration
 import random
 
@@ -25,10 +25,10 @@ def start_training():
     print('Loading existing customer_transactions_train and customer_transactions_val')
     customer_transactions_train = {}
     customer_transactions_val = {}
-    if os.path.exists('customer_transactions_train.pkl') and os.path.exists('customer_transactions_val.pkl'):
-        with open('customer_transactions_train.pkl', 'rb') as f:
+    if os.path.exists('./../data/customer_transactions_train.pkl') and os.path.exists('./../data/customer_transactions_val.pkl'):
+        with open('./../data/customer_transactions_train', 'rb') as f:
             customer_transactions_train = pickle.load(f)
-        with open('customer_transactions_val.pkl', 'rb') as f:
+        with open('./../data/customer_transactions_val.pkl', 'rb') as f:
             customer_transactions_val = pickle.load(f)
 
     print('The files are loaded!')
@@ -51,12 +51,12 @@ def start_training():
 
     item_to_semantics = {}
     if os.path.exists(
-            '/Users/mahdinazari/Documents/GitHub/generative-recommendation/quantizers/rqvae_training_results_20251127_132421/item_2_semantic_20251127_132421.pkl'):
+            './../models/rqvae_iteration2/item_2_semantic_20251127_132421.pkl'):
         with open(
-                '/Users/mahdinazari/Documents/GitHub/generative-recommendation/quantizers/rqvae_training_results_20251127_132421/item_2_semantic_20251127_132421.pkl',
+                './../models/rqvae_iteration2/item_2_semantic_20251127_132421.pkl',
                 'rb') as f:
             item_to_semantics = pickle.load(f)
-    all_sids = get_all_unique_tokens_in_sids(item_to_semantics)
+    all_sids = get_all_unique_sids(item_to_semantics)
 
     # add tokens
     tokenizer.add_tokens(all_sids)
@@ -80,13 +80,13 @@ def start_training():
     train_model(train_dataset, model, val_dataset)
 
     # save
-    os.makedirs("./bart-recommender/final_model", exist_ok=True)
-    model.save_pretrained('./bart-recommender/final_model')
-    tokenizer.save_pretrained('./bart-recommender/final_model')
+    os.makedirs('./../models/bart-recommender_iteration2/final_model', exist_ok=True)
+    model.save_pretrained('./../models/bart-recommender_iteration2/final_model')
+    tokenizer.save_pretrained('./../models/bart-recommender_iteration2/final_model')
 
 
 def main():
-    train()
+    start_training()
 
 
 if __name__ == '__main__':

@@ -114,7 +114,7 @@ def get_all_unique_sid(user_histories):
     return list(unique_sids)
 
 
-def get_all_unique_tokens_in_sids(item_to_semantics):
+def get_all_unique_sids(item_to_semantics):
     """
     This function gets the item_to_semantics and returns a set of
     distinct tokens from all SIDs
@@ -293,7 +293,7 @@ def recommended_next_sid(history, model, tokenizer, window_size=36, top_k=1):
     return results
 
 
-def is_model_trained(model_dir='./../models/bart-recommender_iteration2/final_model'):
+def is_model_trained(model_dir='bart-recommender_iteration2/final_model'):
     print(os.getcwd())
     required_files = ["config.json", "tokenizer_config.json"]
     return all(os.path.isfile(os.path.join(model_dir, f)) for f in required_files)
@@ -304,8 +304,8 @@ def main():
 
     if is_model_trained():
         print("Loading pretrained model...")
-        model = BartForConditionalGeneration.from_pretrained('./../models/bart-recommender_iteration2/final_model')
-        tokenizer = BartTokenizer.from_pretrained("'./../models/bart-recommender_iteration2/final_model'")
+        model = BartForConditionalGeneration.from_pretrained('bart-recommender_iteration2/final_model')
+        tokenizer = BartTokenizer.from_pretrained('bart-recommender_iteration2/final_model')
     else:
         print("Training new model (synthetic data)...")
         # generate synthetic histories for train/val
@@ -344,9 +344,9 @@ def main():
         train_model(train_dataset, model, eval_dataset=val_dataset, eval_steps=4, patience=3)
 
         # save
-        os.makedirs('./../models/bart-recommender_iteration2/final_model', exist_ok=True)
-        model.save_pretrained('./../models/bart-recommender_iteration2/final_model')
-        tokenizer.save_pretrained('./../models/bart-recommender_iteration2/final_model')
+        os.makedirs('bart-recommender_iteration2/final_model', exist_ok=True)
+        model.save_pretrained('bart-recommender_iteration2/final_model')
+        tokenizer.save_pretrained('bart-recommender_iteration2/final_model')
 
     # Example inference (use SID tokens in history format)
     # Create an example history of SID tokens (must match SID token string format)
