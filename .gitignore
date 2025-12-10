@@ -174,7 +174,7 @@ cython_debug/
 #  be found at https://github.com/github/gitignore/blob/main/Global/JetBrains.gitignore
 #  and can be added to the global gitignore or merged into this file.  For a more nuclear
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
-#.idea/
+.idea/
 
 # Abstra
 # Abstra is an AI-powered process automation framework.
@@ -213,6 +213,9 @@ bart-recommender/
 # .pickle files
 *.pkl
 
+# .csv files
+*.csv
+
 # .npy files
 *.npy
 
@@ -227,3 +230,12 @@ quantizers/
 
 # png files
 *.png
+
+# json files
+*.json
+
+# model files 
+models/
+
+# tmp files
+.tmp*
