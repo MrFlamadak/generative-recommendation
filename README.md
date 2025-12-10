@@ -1,5 +1,23 @@
 # Generative Recommender System
 
+A Generative Recommender System pipeline for generating product recommendations for the [H&M dataset](https://www.kaggle.com/competitions/h-and-m-personalized-fashion-recommendations).
+
+## Contains
+The repository consists of
+ - ```data/```: where the H&M dataset should be
+ - ```models/```: where the trained models should be stored
+ - ```components/```: source code for main system building blocks (embedder, quantizer, and transformer)
+ - ```data_utils/```: scripts for data handling and analysis
+ - ```eval/```: includes a baseline model and model evaluation scripts
+ - ```train/```: training scripts for components
+ - ```pipeline.ipynb```: pipeline for the entire generative recommender system
+
+## Dependencies
+The requirements for the project can be acquired by letting an environment run:
+```
+pip install -r requirements.txt
+```
+
 ## Structure
 ```
 root/
@@ -11,13 +29,17 @@ root/
 │
 ├── src/
 │   ├── components/
+│   │   ├── embedder/
+│   │   │   ├── __init__.py
+│   │   │   └── embedder.py
+│   │   │
 │   │   ├── quantizer/
 │   │   │   ├── __init__.py
 │   │   │   └── rq_vae.py
 │   │   │
 │   │   └── transformer/
 │   │       ├── __init__.py
-│   │       └── bart.py
+│   │       └── transformer.py
 │   │
 │   ├── data_utils/
 │   │   ├── __init__.py
