@@ -51,9 +51,9 @@ def start_training():
 
     item_to_semantics = {}
     if os.path.exists(
-            './../data/semantic_ids/item_2_semantic_20251127_132421.pkl'):
+            './../data/semantic_ids/item_2_semantic.pkl'):
         with open(
-                './../data/semantic_ids/item_2_semantic_20251127_132421.pkl',
+                './../data/semantic_ids/item_2_semantic.pkl',
                 'rb') as f:
             item_to_semantics = pickle.load(f)
     all_sids = get_all_unique_tokens_in_sids(item_to_semantics)

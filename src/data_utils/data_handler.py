@@ -14,38 +14,32 @@ from src.data_utils import data_analyzer
 
 # A, C, T csv -> pckl -> User_profiles.pck -> train, test, val pckls
 def csv_to_pickle():
-    if os.path.exists("./../../data/articles.csv"):
-        if not os.path.exists("./../../data/articles.pkl"):
-            articles = pd.read_csv("./../../data/articles.csv")
-            articles.to_pickle("./../../data/articles.pkl")
-
-            print("Saved articles.pkl successfully")
-        else: print("articles.pkl already exists. Skipping.")
+    if os.path.exists("./../data/transactions_train.pkl") and os.path.exists("./../data/customers.pkl") and os.path.exists("./../data/articles.pkl"):
+        print("All necessary csv files have already been pickled.")
+        return
+    if os.path.exists("./../data/articles.csv"):
+        articles = pd.read_csv("./../data/articles.csv")
+        articles.to_pickle("./../data/articles.pkl")
+        print("Saved articles.pkl successfully")
     else:
         print("articles.csv does not exist. Make sure it is in the data/ directory.")
     
-    if os.path.exists("./../../data/customers.csv"):
-        if not os.path.exists("./../../data/customers.pkl"):
-            customers = pd.read_csv("./../../data/customers.csv")
-            customers.to_pickle("./../../data/customers.pkl")
-
-            print("Saved customers.pkl successfully")
-        else: print("customers.pkl already exists. Skipping.")
+    if os.path.exists("./../data/customers.csv"):
+        customers = pd.read_csv("./../data/customers.csv")
+        customers.to_pickle("./../data/customers.pkl")
+        print("Saved customers.pkl successfully")
     else:
         print("customers.csv does not exist. Make sure it is in the data/ directory.")
     
-    if os.path.exists("./../../data/transactions_train.csv"):
-        if not os.path.exists("./../../data/transactions_train.pkl"):
-            transactions = pd.read_csv("./../../data/transactions_train.csv")
-            transactions.to_pickle("./../../data/transactions_train.pkl")
-
-            print("Saved transactions_train.pkl successfully")
-        else: print("transactions_train.pkl already exists. Skipping.")
+    if os.path.exists("./../data/transactions_train.csv"):
+        transactions = pd.read_csv("./../data/transactions_train.csv")
+        transactions.to_pickle("./../data/transactions_train.pkl")
+        print("Saved transactions_train.pkl successfully")
     else:
         print("transactions_train.csv does not exist. Make sure it is in the data/ directory.")
     
     print("Done.")
-    
+
 def get_article_feature_string_list():
     print(os.getcwd())
     article_df = pd.read_pickle("./../data/articles.pkl")
@@ -62,17 +56,21 @@ def get_article_feature_string_list():
     return article_df_strings.values.tolist()
 
 def create_and_pickle_user_profiles():
+    if os.path.exists("./../data/user_profiles.pkl"):
+        print("user_profiles.pkl already exists")
+        return pd.read_pickle("./../data/user_profiles.pkl")
+    else:
+        transactions_df = pd.read_pickle("./../data/transactions_train.pkl")
+        user_profiles_df = transactions_df.groupby("customer_id", as_index=False)["article_id"].agg(list)
+        user_profiles_df.to_pickle("./../data/user_profiles.pkl")
+        print("created user_profiles.pkl successfully")
+        return user_profiles_df
 
-    #Creates a user profile for each customer containing article ids of all articles that have been bought.
-    transactions_df = pd.read_pickle("transactions_train.pkl")
-    user_profiles_df = transactions_df.groupby("customer_id", as_index=False)["article_id"].agg(list)
 
-    user_profiles_df.to_pickle("user_profiles.pkl")
-    return user_profiles_df
 
 # Maybe delete
-def create_train_val_test_user_profiles():
-    user_profiles_df = pd.read_pickle("user_profiles.pkl")
+'''def create_train_val_test_user_profiles():
+    user_profiles_df = pd.read_pickle("./../data/user_profiles.pkl")
     user_profiles_df = remove_under_threshold(user_profiles_df, 2)
     seed = 42
     user_profiles_shuffled_df = user_profiles_df.sample(frac=1, random_state=seed)
@@ -91,11 +89,11 @@ def create_train_val_test_user_profiles():
     val_user_profiles_df.to_pickle("customer_transactions_VAL20P.pkl")
     test_user_profiles_df.to_pickle("customer_transactions_TEST20P.pkl")
 
-    return train_user_profiles_df, val_user_profiles_df, test_user_profiles_df
+    return train_user_profiles_df, val_user_profiles_df, test_user_profiles_df'''
 
 def get_random_item_to_sem_ids(size):
-    article_data = pd.read_pickle("articles.pkl")
-    item_to_sem = pd.read_pickle("item_2_semantic.pkl")
+    article_data = pd.read_pickle("./../data/articles.pkl")
+    item_to_sem = pd.read_pickle("./../data/item_2_semantic.pkl")
 
     random_item_to_sem_ids = random.sample(list(item_to_sem.items()), size)
     chosen_sem_ids = [sem_id for _, sem_id in random_item_to_sem_ids]
@@ -163,7 +161,7 @@ def split_input_label_transactions(transactions, input_size=3, labels=1):
     
     return split_transactions
 
-def user_profile_extract_equal_to_threshold(user_profile, threshold):
+def extract_equal_to_threshold(user_profile, threshold):
     """
     Extracts all rows from user_profile where the number of articles
     is equal to the given threshold.
@@ -220,8 +218,8 @@ def remove_over_threshold(user_profile, threshold):
     return preprocessed_user_profile
 
 def filter_transaction_list(min, quantile, transaction_list):
-    # This function removes all users with less than 4 transactions and finds the maximum cut-off length for including 75%
-    # of the data and removes all users that exceed that length.
+    # This function removes all users with less than min transactions and finds the maximum cut-off length for including 75%
+    # of the data remaining data and removes all users that exceed that length.
     transaction_list = remove_under_threshold(transaction_list, min)
     cut_off = data_analyzer.get_cutoff_length_for_given_quantile(transaction_list, quantile)
     transaction_list = remove_over_threshold(transaction_list, cut_off)
@@ -229,6 +227,11 @@ def filter_transaction_list(min, quantile, transaction_list):
     return transaction_list
 
 def split_train_val_test_last_2(transaction_list_df):
+    if os.path.exists("./../data/transaction_list_train.pkl") and os.path.exists(
+            "./../data/transaction_list_val.pkl") and os.path.exists("./../data/transaction_list_test.pkl"):
+        print("transaction_list_train.pkl, transaction_list_val.pkl and transaction_list_test.pkl already exist.")
+        return
+
     test = transaction_list_df.copy()
     val = transaction_list_df.copy()
     train = transaction_list_df.copy()
@@ -236,7 +239,12 @@ def split_train_val_test_last_2(transaction_list_df):
     val["article_id"] = val["article_id"].apply(lambda x: x[:-1])
     train["article_id"] = train["article_id"].apply(lambda x: x[:-2])
 
-    return train, val, test
+    train.to_pickle("./../data/transaction_list_train.pkl")
+    val.to_pickle("./../data/transaction_list_val.pkl")
+    test.to_pickle("./../data/transaction_list_test.pkl")
+    print("Created transaction_list_train.pkl, transaction_list_val.pkl and transaction_list_test.pkl successfully")
+
+    return
 
 if __name__ == '__main__':
     #transaction_list = pd.read_pickle("user_profiles.pkl")
