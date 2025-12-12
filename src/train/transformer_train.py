@@ -1,6 +1,6 @@
 import os
 import pickle
-from src.components.transformer.transformer import prepare_dataset, train_model, get_all_unique_tokens_in_sids
+from src.components.transformer import prepare_dataset, train_model, get_all_unique_tokens_in_sids
 from transformers import BartTokenizer, BartForConditionalGeneration
 import random
 
