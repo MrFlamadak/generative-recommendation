@@ -234,8 +234,5 @@ quantizers/
 # json files
 *.json
 
-# model files 
-models/
-
 # tmp files
 .tmp*
