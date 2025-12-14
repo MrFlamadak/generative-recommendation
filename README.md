@@ -14,13 +14,13 @@ The repository consists of
  - ```train/```: training scripts for components
  - ```pipeline.ipynb```: pipeline for the entire generative recommender system
 
-## Dependencies
-The requirements for the project can be acquired by letting an environment run:
+## Prerequisites
+The dependencies for the project can be acquired by letting an environment run:
 ```
 pip install -r requirements.txt
 ```
 
-
+Before running ```pipeline.ipynb```, make sure that ```articles.csv```, ```customers.csv```, and ```transactions_train.csv``` from the H&M dataset are present directly in the ```data/``` directory.
 
 ## Structure
 ```
