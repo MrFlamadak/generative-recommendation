@@ -76,3 +76,11 @@ root/
 ├── README.md
 └── requirements.txt
 ```
+
+## Contact
+<table>
+  <tr><td>Mostafa Aziz Zuher</td><td><a href="mailto:mostafaaziz510@yahoo.se">mostafaaziz510@yahoo.se</a></td></tr>
+  <tr><td>Roy Liu</td><td><a href="mailto:royliu.ruirui@gmail.com">royliu.ruirui@gmail.com</a></td></tr>
+  <tr><td>Serkan Anar</td><td><a href="mailto:serkan.anar24@gmail.com">serkan.anar24@gmail.com</a></td></tr>
+  <tr><td>Mahdi Nazari</td><td><a href="mailto:Mahdi.Nazari1999@gmail.com">Mahdi.Nazari1999@gmail.com</a></td></tr>
+</table>
