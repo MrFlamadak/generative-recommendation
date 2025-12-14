@@ -15,7 +15,9 @@ The repository consists of
  - ```pipeline.ipynb```: pipeline for the entire generative recommender system
 
 ## Prerequisites
-The dependencies for the project can be acquired by letting an environment run:
+This project is known to work with Python 3.12 and 3.13.  
+
+The dependencies for the project can be acquired by letting your environment run:
 ```
 pip install -r requirements.txt
 ```
@@ -35,7 +37,11 @@ root/
 │   └── ...
 │
 ├── models/
-│   └── ...
+│   ├── bart/
+│   │   └── ...
+│   │
+│   └── rqvae/
+│       └── ...
 │
 ├── src/
 │   ├── components/
