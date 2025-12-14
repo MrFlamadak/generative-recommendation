@@ -1,8 +1,8 @@
 import numpy as np
 
-def MAP_at_K(predicted, labels, K=12):
+def SMAP_at_K(predicted, labels, K=12):
     '''
-    Evaluates the results using the Mean Average Precision @ K (MAP@K) metric.
+    Evaluates the results using the Simplified Mean Average Precision @ K (SMAP@K) metric.
     K is by default set to 12. This is a special version of MAP@K where
     the number of labels for each customer always is 1.
     
@@ -18,7 +18,7 @@ def MAP_at_K(predicted, labels, K=12):
     Returns
     -------
     score : double
-            Mean Average Precision @ K
+            Simplified Mean Average Precision @ K
     '''
     scores = []
     for (pred, label) in zip(predicted, labels):
