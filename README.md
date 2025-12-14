@@ -2,6 +2,9 @@
 
 A Generative Recommender System pipeline for generating product recommendations for the [H&M dataset](https://www.kaggle.com/competitions/h-and-m-personalized-fashion-recommendations).
 
+## Pipeline Architecture
+![Generative Recommender Architecture](docs/architecture/GR_Architecture.png)
+
 ## Contains
 The repository consists of
  - ```data/```: where the H&M dataset should be
@@ -35,6 +38,10 @@ root/
 │   │   └── ...
 │   │
 │   └── ...
+│
+├── docs/
+│   └── architecture/
+│       └── GR_Architecture.png
 │
 ├── models/
 │   ├── bart/
