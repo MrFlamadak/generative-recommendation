@@ -5,6 +5,8 @@ A Generative Recommender System pipeline for generating product recommendations 
 ## Contains
 The repository consists of
  - ```data/```: where the H&M dataset should be
+ - ```embeddings/```: where the embeddings should be stored
+ - ```semantic_ids/```: where the semantic IDs should be stored
  - ```models/```: where the trained models should be stored
  - ```components/```: source code for main system building blocks (embedder, quantizer, and transformer)
  - ```data_utils/```: scripts for data handling and analysis
@@ -18,10 +20,18 @@ The requirements for the project can be acquired by letting an environment run:
 pip install -r requirements.txt
 ```
 
+
+
 ## Structure
 ```
 root/
 ├── data/
+│   ├── embeddings/
+│   │   └── ...
+│   │
+│   ├── semantic_ids/
+│   │   └── ...
+│   │
 │   └── ...
 │
 ├── models/
@@ -29,17 +39,10 @@ root/
 │
 ├── src/
 │   ├── components/
-│   │   ├── embedder/
-│   │   │   ├── __init__.py
-│   │   │   └── embedder.py
-│   │   │
-│   │   ├── quantizer/
-│   │   │   ├── __init__.py
-│   │   │   └── rq_vae.py
-│   │   │
-│   │   └── transformer/
-│   │       ├── __init__.py
-│   │       └── transformer.py
+│   │   ├── __init__.py
+│   │   ├── embedder.py
+│   │   ├── quantizer.py
+│   │   └── transformer.py
 │   │
 │   ├── data_utils/
 │   │   ├── __init__.py
@@ -58,8 +61,8 @@ root/
 │   │
 │   ├── train/
 │   │   ├── __init__.py
-│   │   ├── bart_train.py
-│   │   └── rq_vae_train.py
+│   │   ├── quantizer_train.py
+│   │   └── transformer_train.py
 │   │
 │   └── pipeline.ipynb
 │
