@@ -234,5 +234,14 @@ quantizers/
 # json files
 *.json
 
+# pth files
+*.pth
+
 # tmp files
 .tmp*
+
+# safetensors files
+*.safetensors
+
+# merges.txt files
+*merges.txt
