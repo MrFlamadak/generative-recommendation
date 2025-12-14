@@ -2,7 +2,7 @@ import numpy as np
 #from minisom import MiniSom
 from sklearn.metrics import pairwise_distances
 from sklearn.decomposition import PCA
-#import plotly as plt
+import plotly as plt
 import pandas as pd
 #import plotly.express as px
 
@@ -71,7 +71,7 @@ def print_data_stats(data):
     print("Number of PCA components to cover 90% variance:", n_components_90)
 
     return
-
+'''
 def plot_som(vector_data, article_data):
     # Train MiniSom
     som = MiniSom(10, 10, vector_data.shape[1], sigma=0.5, learning_rate=0.5)
@@ -118,10 +118,10 @@ def plot_som(vector_data, article_data):
 
     #print(sem_data.shape)
     print(np.unique([som.winner(x) for x in vector_data], axis=0).shape)
-
+'''
 
 def print_article_dataset_infostats():
-    article_df = pd.read_pickle("articles.pkl")
+    article_df = pd.read_pickle("data/articles.pkl")
 
     # Data analysis (to understand the data)
     print(f"Dimensions, column names and datatypes of the data:\n")
@@ -149,7 +149,7 @@ def print_article_dataset_infostats():
     return
 
 def print_transaction_list_dataset_infostats():
-    user_profile_train_df = pd.read_pickle("customer_transactions_TRAIN60P.pkl")
+    user_profile_train_df = pd.read_pickle("data/transaction_list_train.pkl")
     # training, test = dh.create_test_and_training_user_profiles(0.8)
 
     # Compute lengths of article_id arraystr
@@ -212,7 +212,8 @@ if __name__ == '__main__':
     print_data_stats(sem_data)
     plot_som(sem_data, article_data)'''
     #print_transaction_list_dataset_infostats()
-    list = pd.read_pickle("user_profiles.pkl")
-    cut_off = get_cutoff_length_for_given_quantile(list, 0.75)
+    #list = pd.read_pickle("user_profiles.pkl")
+    #cut_off = get_cutoff_length_for_given_quantile(list, 0.75)
+    print_article_dataset_infostats()
 
 
