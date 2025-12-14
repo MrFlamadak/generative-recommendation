@@ -167,7 +167,7 @@ def prepare_dataset(user_histories, window_size, tokenizer):
 # train
 def train_model(train_dataset, model, eval_dataset=None, eval_steps=200, patience=5, grad_accum_steps=1, num_workers=4):
     training_args = TrainingArguments(
-        output_dir='./../models/bart-recommender_iteration2',
+        output_dir='./../models/bart',
         num_train_epochs=8,  # increase to 7 or 8 to see the trend
         per_device_train_batch_size=512,  # increase if needed
         gradient_accumulation_steps=grad_accum_steps,
@@ -215,10 +215,10 @@ def train_model(train_dataset, model, eval_dataset=None, eval_steps=200, patienc
 
     # log trainer.state.log_history
     log_history = trainer.state.log_history
-    os.makedirs('./../models/bart-recommender_iteration2', exist_ok=True)
+    os.makedirs('./../models/bart', exist_ok=True)
 
     # dump full log history (JSON)
-    with open('./../models/bart-recommender_iteration2/training_log_history.json', 'w') as fh:
+    with open('./../models/bart/training_log_history.json', 'w') as fh:
         json.dump(log_history, fh, indent=2)
 
     # extract per-step train losses and eval_losses
@@ -227,12 +227,12 @@ def train_model(train_dataset, model, eval_dataset=None, eval_steps=200, patienc
                    'eval_loss' in rec]
 
     # save CSVs for easy plotting
-    with open('./../models/bart-recommender_iteration2/train_losses.csv', 'w', newline='') as fh:
+    with open('./../models/bart/train_losses.csv', 'w', newline='') as fh:
         writer = csv.DictWriter(fh, fieldnames=['step', 'loss'])
         writer.writeheader()
         writer.writerows(train_losses)
 
-    with open('./../models/bart-recommender_iteration2/eval_losses.csv', 'w', newline='') as fh:
+    with open('./../models/bart/eval_losses.csv', 'w', newline='') as fh:
         writer = csv.DictWriter(fh, fieldnames=['step', 'eval_loss'])
         writer.writeheader()
         writer.writerows(eval_losses)
@@ -293,7 +293,7 @@ def recommended_next_sid(history, model, tokenizer, window_size=36, top_k=1):
     return results
 
 
-def is_model_trained(model_dir="./../models/bart-recommender_iteration2/final_model"):
+def is_model_trained(model_dir="./../models/bart/final_model"):
     required_files = ["config.json", "tokenizer_config.json"]
     return all(os.path.isfile(os.path.join(model_dir, f)) for f in required_files)
 
@@ -303,8 +303,8 @@ def main():
 
     if is_model_trained():
         print("Loading pretrained model...")
-        model = BartForConditionalGeneration.from_pretrained("./../models/bart-recommender_iteration2/final_model")
-        tokenizer = BartTokenizer.from_pretrained("./../models/bart-recommender_iteration2/final_model")
+        model = BartForConditionalGeneration.from_pretrained("./../models/bart/final_model")
+        tokenizer = BartTokenizer.from_pretrained("./../models/bart/final_model")
     else:
         print("Training new model (synthetic data)...")
         # generate synthetic histories for train/val
@@ -343,9 +343,9 @@ def main():
         train_model(train_dataset, model, eval_dataset=val_dataset, eval_steps=4, patience=3)
 
         # save
-        os.makedirs("./../models/bart-recommender_iteration2/final_model", exist_ok=True)
-        model.save_pretrained("./../models/bart-recommender_iteration2/final_model")
-        tokenizer.save_pretrained("./../models/bart-recommender_iteration2/final_model")
+        os.makedirs("./../models/bart/final_model", exist_ok=True)
+        model.save_pretrained("./../models/bart/final_model")
+        tokenizer.save_pretrained("./../models/bart/final_model")
 
     # Example inference (use SID tokens in history format)
     # Create an example history of SID tokens (must match SID token string format)

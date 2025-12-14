@@ -80,9 +80,9 @@ def start_training():
     train_model(train_dataset, model, val_dataset)
 
     # save
-    os.makedirs("./../models/bart-recommender_iteration2/final_model", exist_ok=True)
-    model.save_pretrained('./../models/bart-recommender_iteration2/final_model')
-    tokenizer.save_pretrained('./../models/bart-recommender_iteration2/final_model')
+    os.makedirs("./../models/bart", exist_ok=True)
+    model.save_pretrained('./../models/bart')
+    tokenizer.save_pretrained('./../models/bart')
 
 
 def main():
